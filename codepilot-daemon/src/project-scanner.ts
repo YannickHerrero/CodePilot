@@ -37,6 +37,9 @@ export async function scanProjects(devDir: string): Promise<Project[]> {
       gitBranch,
       lastOpenedAt: null,
       metadata,
+      sessionCount: 0,
+      totalMessages: 0,
+      lastSessionAt: null,
     });
   }
 
@@ -184,6 +187,9 @@ export async function createProject(devDir: string, name: string): Promise<Proje
     gitBranch,
     lastOpenedAt: null,
     metadata: {},
+    sessionCount: 0,
+    totalMessages: 0,
+    lastSessionAt: null,
   };
 
   upsertProject(project);

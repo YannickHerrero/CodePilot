@@ -77,7 +77,14 @@ export function upsertProject(project: Project): void {
 
 export function getAllProjects(): Project[] {
   const rows = getDB()
-    .prepare("SELECT * FROM projects ORDER BY last_opened_at DESC NULLS LAST, name ASC")
+    .prepare(
+      `SELECT p.*,
+        (SELECT COUNT(*) FROM sessions WHERE project_id = p.id AND is_active = 1) AS session_count,
+        (SELECT COUNT(*) FROM messages WHERE session_id IN (SELECT id FROM sessions WHERE project_id = p.id)) AS total_messages,
+        (SELECT MAX(updated_at) FROM sessions WHERE project_id = p.id AND is_active = 1) AS last_session_at
+      FROM projects p
+      ORDER BY last_opened_at DESC NULLS LAST, name ASC`,
+    )
     .all() as Array<Record<string, unknown>>;
   return rows.map(rowToProject);
 }
@@ -105,9 +112,15 @@ export function removeStaleProjects(activePaths: Set<string>): number {
 }
 
 export function getProject(id: string): Project | undefined {
-  const row = getDB().prepare("SELECT * FROM projects WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+  const row = getDB()
+    .prepare(
+      `SELECT p.*,
+        (SELECT COUNT(*) FROM sessions WHERE project_id = p.id AND is_active = 1) AS session_count,
+        (SELECT COUNT(*) FROM messages WHERE session_id IN (SELECT id FROM sessions WHERE project_id = p.id)) AS total_messages,
+        (SELECT MAX(updated_at) FROM sessions WHERE project_id = p.id AND is_active = 1) AS last_session_at
+      FROM projects p WHERE p.id = ?`,
+    )
+    .get(id) as Record<string, unknown> | undefined;
   return row ? rowToProject(row) : undefined;
 }
 
@@ -119,6 +132,9 @@ function rowToProject(row: Record<string, unknown>): Project {
     gitBranch: (row.git_branch as string) ?? null,
     lastOpenedAt: (row.last_opened_at as string) ?? null,
     metadata: JSON.parse((row.metadata as string) || "{}"),
+    sessionCount: (row.session_count as number) ?? 0,
+    totalMessages: (row.total_messages as number) ?? 0,
+    lastSessionAt: (row.last_session_at as string) ?? null,
   };
 }
 

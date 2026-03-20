@@ -33,6 +33,9 @@ const MOCK_PROJECTS: Project[] = [
       gitRemote: "github.com/acme/codepilot-web",
       framework: "Next.js",
     },
+    sessionCount: 3,
+    totalMessages: 42,
+    lastSessionAt: "2026-03-19T14:30:00Z",
   },
   {
     id: "proj_2",
@@ -45,6 +48,9 @@ const MOCK_PROJECTS: Project[] = [
       gitRemote: "github.com/acme/api-server",
       framework: "Express",
     },
+    sessionCount: 5,
+    totalMessages: 128,
+    lastSessionAt: "2026-03-18T10:15:00Z",
   },
   {
     id: "proj_3",
@@ -57,6 +63,9 @@ const MOCK_PROJECTS: Project[] = [
       gitRemote: "github.com/acme/mobile-app",
       framework: "React Native",
     },
+    sessionCount: 1,
+    totalMessages: 8,
+    lastSessionAt: "2026-03-17T09:00:00Z",
   },
 ];
 

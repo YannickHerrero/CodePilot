@@ -53,20 +53,20 @@ export const ProjectCard = memo(function ProjectCard({ project, onPress }: Props
         )}
       </View>
 
-      {project.metadata.description && (
-        <Text
-          numberOfLines={1}
-          style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}
-        >
-          {project.metadata.description}
-        </Text>
-      )}
-
-      {project.lastOpenedAt && (
-        <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-          {timeAgo(project.lastOpenedAt)}
-        </Text>
-      )}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        {project.lastSessionAt ? (
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+            Last chat {timeAgo(project.lastSessionAt)}
+          </Text>
+        ) : (
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>No conversations yet</Text>
+        )}
+        {project.totalMessages > 0 && (
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+            {project.totalMessages} {project.totalMessages === 1 ? "message" : "messages"}
+          </Text>
+        )}
+      </View>
     </Pressable>
   );
 });

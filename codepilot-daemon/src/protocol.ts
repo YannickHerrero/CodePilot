@@ -11,6 +11,9 @@ export interface Project {
     gitRemote?: string;
     framework?: string;
   };
+  sessionCount: number;
+  totalMessages: number;
+  lastSessionAt: string | null;
 }
 
 export interface Session {
