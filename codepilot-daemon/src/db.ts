@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { v4 as uuidv4 } from "uuid";
-import type { Project, Session, Message } from "./protocol.js";
+import type { Project, Session, Message, Service } from "./protocol.js";
 
 let db: Database.Database;
 
@@ -43,6 +43,16 @@ export function initDB(dbPath = "codepilot.db"): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
     CREATE INDEX IF NOT EXISTS idx_messages_seq ON messages(session_id, seq);
+
+    CREATE TABLE IF NOT EXISTS services (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      command TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_services_project ON services(project_id);
   `);
 
   return db;
@@ -311,5 +321,75 @@ function rowToMessage(row: Record<string, unknown>): Message {
     content: JSON.parse(row.content as string),
     createdAt: row.created_at as string,
     seq: row.seq as number,
+  };
+}
+
+// === Services ===
+
+export function createService(projectId: string, name: string, command: string): Service {
+  const id = uuidv4();
+  const now = new Date().toISOString();
+  getDB()
+    .prepare(
+      `INSERT INTO services (id, project_id, name, command, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+    )
+    .run(id, projectId, name, command, now);
+  return {
+    id,
+    projectId,
+    name,
+    command,
+    createdAt: now,
+  };
+}
+
+export function getServicesByProject(projectId: string): Service[] {
+  const rows = getDB()
+    .prepare(
+      `SELECT * FROM services WHERE project_id = ? ORDER BY created_at ASC`,
+    )
+    .all(projectId) as Array<Record<string, unknown>>;
+  return rows.map(rowToService);
+}
+
+export function getService(serviceId: string): Service | null {
+  const row = getDB()
+    .prepare(`SELECT * FROM services WHERE id = ?`)
+    .get(serviceId) as Record<string, unknown> | undefined;
+  return row ? rowToService(row) : null;
+}
+
+export function updateService(
+  serviceId: string,
+  updates: { name?: string; command?: string },
+): Service | null {
+  const service = getService(serviceId);
+  if (!service) return null;
+
+  const name = updates.name ?? service.name;
+  const command = updates.command ?? service.command;
+
+  getDB()
+    .prepare(`UPDATE services SET name = ?, command = ? WHERE id = ?`)
+    .run(name, command, serviceId);
+
+  return getService(serviceId);
+}
+
+export function deleteService(serviceId: string): boolean {
+  const result = getDB()
+    .prepare(`DELETE FROM services WHERE id = ?`)
+    .run(serviceId);
+  return result.changes > 0;
+}
+
+function rowToService(row: Record<string, unknown>): Service {
+  return {
+    id: row.id as string,
+    projectId: row.project_id as string,
+    name: row.name as string,
+    command: row.command as string,
+    createdAt: row.created_at as string,
   };
 }
