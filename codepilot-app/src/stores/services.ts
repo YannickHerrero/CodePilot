@@ -96,6 +96,27 @@ export const useServicesStore = create<ServicesState>((set, get) => ({
 // === Message Handlers ===
 
 addMessageHandler((msg: DaemonMessage) => {
+  // On successful auth (reconnect), clear stale instance data
+  // Services will be refetched when ServicesList mounts
+  if (msg.type === "auth:result" && msg.success) {
+    useServicesStore.setState((state) => {
+      // Clear instances from all services (they're gone after daemon restart)
+      // Keep the service definitions but clear runtime state
+      const clearedByProject: Record<string, ServiceWithInstances[]> = {};
+      for (const [projectId, services] of Object.entries(state.servicesByProject)) {
+        clearedByProject[projectId] = services.map((s) => ({
+          ...s,
+          instances: [],
+        }));
+      }
+      return {
+        servicesByProject: clearedByProject,
+        logsByInstance: {},
+        subscribedInstances: new Set<string>(),
+      };
+    });
+  }
+
   // Services list response
   if (msg.type === "services:data") {
     useServicesStore.setState((state) => ({
