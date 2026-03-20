@@ -266,6 +266,7 @@ function streamResponse(
         type: "stream:tool_use",
         sessionId,
         messageId,
+        id: `demo_tool_${messageId}`,
         tool: response.toolUse!.tool,
         input: response.toolUse!.input,
       });
@@ -277,6 +278,7 @@ function streamResponse(
         type: "stream:tool_result",
         sessionId,
         messageId,
+        id: `demo_tool_${messageId}`,
         tool: response.toolResult!.tool,
         output: response.toolResult!.output,
       });

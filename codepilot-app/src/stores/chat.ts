@@ -108,7 +108,7 @@ addMessageHandler((msg: DaemonMessage) => {
       const current = state.streamingMessage;
       const toolBlock: AssistantBlock = {
         type: "tool_use",
-        id: `tool_${Date.now()}`,
+        id: msg.id,
         tool: msg.tool,
         input: msg.input,
       };
@@ -136,7 +136,7 @@ addMessageHandler((msg: DaemonMessage) => {
       const current = state.streamingMessage;
       const resultBlock: AssistantBlock = {
         type: "tool_result",
-        id: `result_${Date.now()}`,
+        id: msg.id,
         tool: msg.tool,
         output: msg.output,
         isError: msg.isError,

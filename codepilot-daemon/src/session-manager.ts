@@ -157,6 +157,7 @@ async function startAgentSession(
   const assistantMessageId = uuidv4();
   const blocks: AssistantBlock[] = [];
   let currentTextBlock: { type: "text"; text: string } | null = null;
+  const processedToolUseIds = new Set<string>();
 
   try {
     const options: Record<string, unknown> = {
@@ -207,18 +208,23 @@ async function startAgentSession(
         continue;
       }
 
-      // Assistant message — contains tool use blocks and text
+      // Assistant message — SDK nests content inside message.message
       if (message.type === "assistant") {
         const assistant = message as Record<string, unknown>;
-        const content = assistant.content as Array<Record<string, unknown>> | undefined;
+        const innerMessage = assistant.message as Record<string, unknown> | undefined;
+        const content = innerMessage?.content as Array<Record<string, unknown>> | undefined;
         if (!content) continue;
 
         for (const block of content) {
           if (block.type === "tool_use") {
+            const toolId = (block.id as string) || uuidv4();
+            if (processedToolUseIds.has(toolId)) continue;
+            processedToolUseIds.add(toolId);
+
             currentTextBlock = null;
             const toolBlock: AssistantBlock = {
               type: "tool_use",
-              id: (block.id as string) || uuidv4(),
+              id: toolId,
               tool: block.name as string,
               input: (block.input as Record<string, unknown>) || {},
             };
@@ -227,40 +233,13 @@ async function startAgentSession(
               type: "stream:tool_use",
               sessionId,
               messageId: assistantMessageId,
+              id: toolId,
               tool: toolBlock.tool,
               input: toolBlock.input,
             });
 
             const activity = getToolActivity(toolBlock.tool, toolBlock.input);
             broadcast({ type: "status:busy", sessionId, activity });
-          } else if (block.type === "tool_result") {
-            currentTextBlock = null;
-            const toolUseId = block.tool_use_id as string;
-            const matchingTool = blocks.find(
-              (b) => b.type === "tool_use" && b.id === toolUseId,
-            );
-            const toolName =
-              matchingTool && matchingTool.type === "tool_use" ? matchingTool.tool : "unknown";
-            const output =
-              typeof block.content === "string"
-                ? block.content
-                : JSON.stringify(block.content ?? "");
-            const resultBlock: AssistantBlock = {
-              type: "tool_result",
-              id: toolUseId || uuidv4(),
-              tool: toolName,
-              output,
-              isError: (block.is_error as boolean) || false,
-            };
-            blocks.push(resultBlock);
-            broadcast({
-              type: "stream:tool_result",
-              sessionId,
-              messageId: assistantMessageId,
-              tool: resultBlock.tool,
-              output: resultBlock.output,
-              isError: resultBlock.isError,
-            });
           } else if (block.type === "text") {
             const blockText = block.text as string;
             if (blockText && !currentTextBlock?.text) {
@@ -273,6 +252,57 @@ async function startAgentSession(
                 text: blockText,
               });
             }
+          }
+        }
+        continue;
+      }
+
+      // User message — SDK sends tool results in user messages
+      if (message.type === "user") {
+        const userMsg = message as Record<string, unknown>;
+        const content = userMsg.content as Array<Record<string, unknown>> | undefined;
+        if (!content) continue;
+
+        for (const block of content) {
+          if (block.type === "tool_result") {
+            currentTextBlock = null;
+            const toolUseId = block.tool_use_id as string;
+            if (!toolUseId) continue;
+
+            const matchingTool = blocks.find(
+              (b) => b.type === "tool_use" && b.id === toolUseId,
+            );
+            const toolName =
+              matchingTool && matchingTool.type === "tool_use" ? matchingTool.tool : "unknown";
+            const rawContent = block.content;
+            let output: string;
+            if (typeof rawContent === "string") {
+              output = rawContent;
+            } else if (Array.isArray(rawContent)) {
+              output = (rawContent as Array<Record<string, unknown>>)
+                .filter((c) => c.type === "text")
+                .map((c) => c.text as string)
+                .join("\n");
+            } else {
+              output = JSON.stringify(rawContent ?? "");
+            }
+            const resultBlock: AssistantBlock = {
+              type: "tool_result",
+              id: toolUseId,
+              tool: toolName,
+              output,
+              isError: (block.is_error as boolean) || false,
+            };
+            blocks.push(resultBlock);
+            broadcast({
+              type: "stream:tool_result",
+              sessionId,
+              messageId: assistantMessageId,
+              id: toolUseId,
+              tool: resultBlock.tool,
+              output: resultBlock.output,
+              isError: resultBlock.isError,
+            });
           }
         }
         continue;
@@ -365,7 +395,8 @@ Assistant: ${assistantResponse.slice(0, 500)}`;
 
     for await (const message of query({ prompt: titlePrompt, options: { model: "haiku" } })) {
       if (message.type === "assistant") {
-        const content = (message as Record<string, unknown>).content as Array<Record<string, unknown>> | undefined;
+        const inner = (message as Record<string, unknown>).message as Record<string, unknown> | undefined;
+        const content = inner?.content as Array<Record<string, unknown>> | undefined;
         if (content) {
           for (const block of content) {
             if (block.type === "text") {

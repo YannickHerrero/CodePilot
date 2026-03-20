@@ -79,6 +79,7 @@ export type DaemonMessage =
       type: "stream:tool_use";
       sessionId: string;
       messageId: string;
+      id: string;
       tool: string;
       input: Record<string, unknown>;
     }
@@ -86,6 +87,7 @@ export type DaemonMessage =
       type: "stream:tool_result";
       sessionId: string;
       messageId: string;
+      id: string;
       tool: string;
       output: string;
       isError?: boolean;

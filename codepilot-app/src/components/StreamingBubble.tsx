@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { colors } from "@/constants/theme";
 import { MarkdownText } from "@/components/MarkdownText";
+import { ToolUseBlock } from "@/components/ToolUseBlock";
 import type { AssistantBlock } from "@/lib/protocol";
 import type { StreamingMessage } from "@/stores/chat";
 
@@ -13,7 +14,12 @@ export function StreamingBubble({ streaming, activity }: Props) {
   return (
     <View style={{ marginBottom: 8 }}>
       {streaming.blocks.map((block, i) => (
-        <StreamingBlockView key={i} block={block} isLast={i === streaming.blocks.length - 1} />
+        <StreamingBlockView
+          key={block.type === "tool_use" || block.type === "tool_result" ? block.id : i}
+          block={block}
+          blocks={streaming.blocks}
+          isLast={i === streaming.blocks.length - 1}
+        />
       ))}
       {activity && (
         <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 4, fontStyle: "italic" }}>
@@ -24,7 +30,15 @@ export function StreamingBubble({ streaming, activity }: Props) {
   );
 }
 
-function StreamingBlockView({ block, isLast }: { block: AssistantBlock; isLast: boolean }) {
+function StreamingBlockView({
+  block,
+  blocks,
+  isLast,
+}: {
+  block: AssistantBlock;
+  blocks: AssistantBlock[];
+  isLast: boolean;
+}) {
   if (block.type === "text") {
     return (
       <View style={{ marginBottom: 4 }}>
@@ -34,50 +48,16 @@ function StreamingBlockView({ block, isLast }: { block: AssistantBlock; isLast: 
   }
 
   if (block.type === "tool_use") {
-    return (
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderRadius: 8,
-          padding: 10,
-          marginVertical: 4,
-          borderLeftWidth: 3,
-          borderLeftColor: colors.accent,
-        }}
-      >
-        <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "600" }}>
-          {block.tool}
-        </Text>
-      </View>
+    const result = blocks.find(
+      (b): b is Extract<AssistantBlock, { type: "tool_result" }> =>
+        b.type === "tool_result" && b.id === block.id,
     );
+    return <ToolUseBlock block={block} result={result} />;
   }
 
+  // tool_result blocks are rendered alongside their tool_use, skip standalone rendering
   if (block.type === "tool_result") {
-    return (
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderRadius: 8,
-          padding: 10,
-          marginVertical: 4,
-          borderLeftWidth: 3,
-          borderLeftColor: block.isError ? colors.error : colors.success,
-        }}
-      >
-        <Text
-          style={{
-            color: block.isError ? colors.error : colors.success,
-            fontSize: 12,
-            fontWeight: "600",
-          }}
-        >
-          {block.tool} {block.isError ? "error" : "result"}
-        </Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 12, fontFamily: "monospace" }} numberOfLines={4}>
-          {block.output}
-        </Text>
-      </View>
-    );
+    return null;
   }
 
   return null;
