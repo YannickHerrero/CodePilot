@@ -1,6 +1,14 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { validateToken } from "./auth.js";
-import { getAllProjects } from "./db.js";
+import {
+  getAllProjects,
+  getProject,
+  getServicesByProject,
+  getService,
+  createService as dbCreateService,
+  updateService as dbUpdateService,
+  deleteService as dbDeleteService,
+} from "./db.js";
 import { refreshProjects, createProject } from "./project-scanner.js";
 import {
   handleSessionsList,
@@ -10,8 +18,19 @@ import {
   handleMessageSend,
   handleMessageInterrupt,
 } from "./session-manager.js";
+import {
+  setBroadcast,
+  setSendTo,
+  startInstance,
+  stopInstance,
+  subscribe,
+  unsubscribe,
+  cleanupSubscriber,
+  getInstancesForService,
+  getInstanceServiceId,
+} from "./service-manager.js";
 import { log, error as logError } from "./logger.js";
-import type { ClientMessage, DaemonMessage } from "./protocol.js";
+import type { ClientMessage, DaemonMessage, ServiceWithInstances } from "./protocol.js";
 
 interface ClientState {
   authenticated: boolean;
@@ -43,6 +62,10 @@ export function broadcast(msg: DaemonMessage): void {
 }
 
 export function startWSServer(port: number): WebSocketServer {
+  // Wire up service-manager callbacks
+  setBroadcast(broadcast);
+  setSendTo(sendTo);
+
   const wss = new WebSocketServer({ port });
 
   wss.on("connection", (ws) => {
@@ -85,6 +108,7 @@ export function startWSServer(port: number): WebSocketServer {
 
     ws.on("close", () => {
       if (state.authTimeout) clearTimeout(state.authTimeout);
+      cleanupSubscriber(ws);
       clients.delete(ws);
     });
 
@@ -189,6 +213,42 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       handleMessageInterrupt(ws, msg);
       break;
 
+    // === Service Messages ===
+
+    case "services:list":
+      handleServicesList(ws, msg);
+      break;
+
+    case "service:create":
+      handleServiceCreate(ws, msg);
+      break;
+
+    case "service:update":
+      handleServiceUpdate(ws, msg);
+      break;
+
+    case "service:delete":
+      handleServiceDelete(ws, msg);
+      break;
+
+    // === Instance Messages ===
+
+    case "instance:start":
+      handleInstanceStart(ws, msg);
+      break;
+
+    case "instance:stop":
+      handleInstanceStop(ws, msg);
+      break;
+
+    case "instance:subscribe":
+      handleInstanceSubscribe(ws, msg);
+      break;
+
+    case "instance:unsubscribe":
+      handleInstanceUnsubscribe(ws, msg);
+      break;
+
     default:
       sendTo(ws, {
         type: "error",
@@ -196,4 +256,125 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         message: `Unknown message type: ${(msg as { type: string }).type}`,
       });
   }
+}
+
+// === Service Handlers ===
+
+function handleServicesList(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "services:list" }>,
+): void {
+  const services = getServicesByProject(msg.projectId);
+  const servicesWithInstances: ServiceWithInstances[] = services.map((service) => ({
+    service,
+    instances: getInstancesForService(service.id),
+  }));
+  sendTo(ws, { type: "services:data", projectId: msg.projectId, services: servicesWithInstances });
+}
+
+function handleServiceCreate(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "service:create" }>,
+): void {
+  const project = getProject(msg.projectId);
+  if (!project) {
+    sendTo(ws, { type: "error", code: "PROJECT_NOT_FOUND", message: "Project not found" });
+    return;
+  }
+
+  const service = dbCreateService(msg.projectId, msg.name, msg.command);
+  broadcast({ type: "service:created", service });
+}
+
+function handleServiceUpdate(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "service:update" }>,
+): void {
+  const service = dbUpdateService(msg.serviceId, {
+    name: msg.name,
+    command: msg.command,
+  });
+
+  if (!service) {
+    sendTo(ws, { type: "error", code: "SERVICE_NOT_FOUND", message: "Service not found" });
+    return;
+  }
+
+  broadcast({ type: "service:updated", service });
+}
+
+function handleServiceDelete(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "service:delete" }>,
+): void {
+  // Check if there are running instances
+  const instances = getInstancesForService(msg.serviceId);
+  const runningInstances = instances.filter((i) => i.status === "running" || i.status === "stopping");
+  if (runningInstances.length > 0) {
+    sendTo(ws, {
+      type: "error",
+      code: "SERVICE_HAS_RUNNING_INSTANCES",
+      message: "Cannot delete service with running instances",
+    });
+    return;
+  }
+
+  const deleted = dbDeleteService(msg.serviceId);
+  if (!deleted) {
+    sendTo(ws, { type: "error", code: "SERVICE_NOT_FOUND", message: "Service not found" });
+    return;
+  }
+
+  broadcast({ type: "service:deleted", serviceId: msg.serviceId });
+}
+
+// === Instance Handlers ===
+
+function handleInstanceStart(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "instance:start" }>,
+): void {
+  const service = getService(msg.serviceId);
+  if (!service) {
+    sendTo(ws, { type: "error", code: "SERVICE_NOT_FOUND", message: "Service not found" });
+    return;
+  }
+
+  const project = getProject(service.projectId);
+  if (!project) {
+    sendTo(ws, { type: "error", code: "PROJECT_NOT_FOUND", message: "Project not found" });
+    return;
+  }
+
+  const instance = startInstance(service, project.path);
+  broadcast({ type: "instance:started", instance, serviceId: service.id });
+}
+
+function handleInstanceStop(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "instance:stop" }>,
+): void {
+  const stopped = stopInstance(msg.instanceId);
+  if (!stopped) {
+    sendTo(ws, { type: "error", code: "INSTANCE_NOT_FOUND", message: "Instance not found or not running" });
+  }
+  // The instance:stopped message will be broadcast when the process actually exits
+}
+
+function handleInstanceSubscribe(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "instance:subscribe" }>,
+): void {
+  const subscribed = subscribe(msg.instanceId, ws);
+  if (!subscribed) {
+    sendTo(ws, { type: "error", code: "INSTANCE_NOT_FOUND", message: "Instance not found" });
+  }
+  // The instance:buffer message is sent by subscribe() directly
+}
+
+function handleInstanceUnsubscribe(
+  _ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "instance:unsubscribe" }>,
+): void {
+  unsubscribe(msg.instanceId, _ws);
 }
