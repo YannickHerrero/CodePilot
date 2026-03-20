@@ -11,6 +11,8 @@ import { StreamingBubble } from "@/components/StreamingBubble";
 import { ChatInput } from "@/components/ChatInput";
 import { StatusBar } from "@/components/StatusBar";
 import { QuickActions } from "@/components/QuickActions";
+import { ReconnectBanner } from "@/components/ReconnectBanner";
+import { useConnectionStore } from "@/stores/connection";
 import type { Message } from "@/lib/protocol";
 
 export default function ChatScreen() {
@@ -32,12 +34,22 @@ export default function ChatScreen() {
     (s) => s.sessionsByProject[projectId!]?.find((sess) => sess.id === sessionId),
   );
   const project = useProjectsStore((s) => s.projects.find((p) => p.id === projectId));
+  const connectionStatus = useConnectionStore((s) => s.status);
 
   const flatListRef = useRef<FlatList>(null);
+  const prevStatus = useRef(connectionStatus);
 
   useEffect(() => {
     if (sessionId) fetchMessages(sessionId);
   }, [sessionId, fetchMessages]);
+
+  // Re-fetch messages after reconnect to sync missed messages
+  useEffect(() => {
+    if (prevStatus.current !== "connected" && connectionStatus === "connected" && sessionId) {
+      fetchMessages(sessionId);
+    }
+    prevStatus.current = connectionStatus;
+  }, [connectionStatus, sessionId, fetchMessages]);
 
   const handleSend = useCallback(
     (text: string) => {
@@ -100,6 +112,7 @@ export default function ChatScreen() {
           projectName={project?.name || session?.title || "New Session"}
           gitBranch={project?.gitBranch}
         />
+        <ReconnectBanner />
 
         <FlatList
           ref={flatListRef}
