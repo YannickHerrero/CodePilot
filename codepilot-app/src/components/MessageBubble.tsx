@@ -2,6 +2,7 @@ import { memo } from "react";
 import { View, Text } from "react-native";
 import { colors } from "@/constants/theme";
 import { ToolUseBlock } from "@/components/ToolUseBlock";
+import { MarkdownText } from "@/components/MarkdownText";
 import type { Message, AssistantBlock, UserMessageContent } from "@/lib/protocol";
 
 interface Props {
@@ -47,9 +48,7 @@ function renderAssistantBlocks(blocks: AssistantBlock[]): React.ReactNode[] {
     if (block.type === "text") {
       elements.push(
         <View key={i} style={{ marginBottom: 4 }}>
-          <Text style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 22, fontFamily: "serif" }}>
-            {block.text}
-          </Text>
+          <MarkdownText>{block.text}</MarkdownText>
         </View>,
       );
     } else if (block.type === "tool_use") {
