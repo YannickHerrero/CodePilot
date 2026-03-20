@@ -27,7 +27,7 @@ function StreamingBlockView({ block, isLast }: { block: AssistantBlock; isLast: 
   if (block.type === "text") {
     return (
       <View style={{ marginBottom: 4 }}>
-        <Text style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 22 }}>
+        <Text style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 22, fontFamily: "serif" }}>
           {block.text}
           {isLast && <Text style={{ color: colors.accent }}>▊</Text>}
         </Text>

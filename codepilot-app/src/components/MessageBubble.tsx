@@ -47,7 +47,7 @@ function renderAssistantBlocks(blocks: AssistantBlock[]): React.ReactNode[] {
     if (block.type === "text") {
       elements.push(
         <View key={i} style={{ marginBottom: 4 }}>
-          <Text style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 22 }}>
+          <Text style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 22, fontFamily: "serif" }}>
             {block.text}
           </Text>
         </View>,
