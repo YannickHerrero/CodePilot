@@ -7,13 +7,13 @@ Control Claude Code from your phone. CodePilot is a self-hosted system that lets
 CodePilot has two parts:
 
 ```
-┌─────────────────┐         WebSocket (port 7777)         ┌──────────────────────┐
+┌──────────────────┐         WebSocket (port 7777)         ┌──────────────────────┐
 │                  │  ◄──────────────────────────────────► │                      │
 │   Mobile App     │        Tailscale / LAN                │   Daemon (VPS)       │
 │   (Expo / RN)    │                                       │   (Node.js)          │
 │                  │   auth, projects, sessions, chat,     │                      │
-│                  │   streaming, tool use, interrupts      │   ┌────────────────┐ │
-│  ┌────────────┐  │                                       │   │ Claude Agent    │ │
+│                  │   streaming, tool use, interrupts     │   ┌────────────────┐ │
+│  ┌────────────┐  │                                       │   │ Claude Agent   │ │
 │  │ Zustand    │  │                                       │   │ SDK            │ │
 │  │ Stores     │  │                                       │   └────────────────┘ │
 │  └────────────┘  │                                       │   ┌────────────────┐ │
@@ -21,7 +21,7 @@ CodePilot has two parts:
 │  │ WebSocket  │  │                                       │   │ (sessions,     │ │
 │  │ Hook       │  │                                       │   │  messages)     │ │
 │  └────────────┘  │                                       │   └────────────────┘ │
-└─────────────────┘                                        └──────────────────────┘
+└──────────────────┘                                       └──────────────────────┘
 ```
 
 **Daemon** (`codepilot-daemon/`) — A Node.js server that runs on your VPS or dev machine. It scans your `~/dev/` directory for projects, manages chat sessions backed by SQLite, and proxies conversations to Claude via the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript). Claude can read files, write code, run commands, and search your codebase — all streamed back to the app in real time.
