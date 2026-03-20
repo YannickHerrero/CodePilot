@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo, useState } from "react";
-import { View, Text, FlatList, Pressable, RefreshControl } from "react-native";
+import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
@@ -9,8 +9,11 @@ import { SessionItem } from "@/components/SessionItem";
 import { SessionItemSkeleton } from "@/components/LoadingSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { RenameSessionDialog } from "@/components/RenameSessionDialog";
+import { ServicesList } from "@/components/ServicesList";
 import { useMessageHandler } from "@/hooks/useWebSocket";
 import type { Session } from "@/lib/protocol";
+
+type TabType = "sessions" | "services";
 
 export default function ProjectDetailScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
@@ -21,6 +24,7 @@ export default function ProjectDetailScreen() {
   const isLoading = useSessionsStore((s) => s.isLoading);
   const { fetchSessions, createSession, renameSession } = useSessionsStore();
   const [sessionToRename, setSessionToRename] = useState<Session | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("sessions");
 
   useEffect(() => {
     if (projectId) fetchSessions(projectId);
@@ -82,45 +86,88 @@ export default function ProjectDetailScreen() {
           </Text>
         )}
 
-        <Pressable
-          onPress={handleNewSession}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? colors.accentHover : colors.accent,
-            borderRadius: 8,
-            padding: 12,
-            alignItems: "center",
-          })}
-        >
-          <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>New Session</Text>
-        </Pressable>
+        {/* Tab Bar */}
+        <View style={styles.tabBar}>
+          <Pressable
+            onPress={() => setActiveTab("sessions")}
+            style={[
+              styles.tab,
+              activeTab === "sessions" && styles.tabActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "sessions" && styles.tabTextActive,
+              ]}
+            >
+              Sessions
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab("services")}
+            style={[
+              styles.tab,
+              activeTab === "services" && styles.tabActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "services" && styles.tabTextActive,
+              ]}
+            >
+              Services
+            </Text>
+          </Pressable>
+        </View>
+
+        {activeTab === "sessions" && (
+          <Pressable
+            onPress={handleNewSession}
+            style={({ pressed }) => ({
+              backgroundColor: pressed ? colors.accentHover : colors.accent,
+              borderRadius: 8,
+              padding: 12,
+              alignItems: "center",
+              marginTop: 12,
+            })}
+          >
+            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>New Session</Text>
+          </Pressable>
+        )}
       </View>
 
-      <FlatList
-        data={sessions}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={() => projectId && fetchSessions(projectId)}
-            tintColor={colors.accent}
-          />
-        }
-        ListEmptyComponent={
-          isLoading ? (
-            <View style={{ gap: 10 }}>
-              <SessionItemSkeleton />
-              <SessionItemSkeleton />
-            </View>
-          ) : (
-            <EmptyState
-              title="No sessions yet"
-              subtitle={'Tap "New Session" to start chatting'}
+      {activeTab === "sessions" ? (
+        <FlatList
+          data={sessions}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingBottom: 24 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() => projectId && fetchSessions(projectId)}
+              tintColor={colors.accent}
             />
-          )
-        }
-      />
+          }
+          ListEmptyComponent={
+            isLoading ? (
+              <View style={{ gap: 10 }}>
+                <SessionItemSkeleton />
+                <SessionItemSkeleton />
+              </View>
+            ) : (
+              <EmptyState
+                title="No sessions yet"
+                subtitle={'Tap "New Session" to start chatting'}
+              />
+            )
+          }
+        />
+      ) : (
+        <ServicesList projectId={projectId!} />
+      )}
 
       <RenameSessionDialog
         session={sessionToRename}
@@ -131,3 +178,29 @@ export default function ProjectDetailScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: 8,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  tabActive: {
+    backgroundColor: colors.surface,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.textSecondary,
+  },
+  tabTextActive: {
+    color: colors.textPrimary,
+  },
+});
