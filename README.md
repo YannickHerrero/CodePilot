@@ -105,7 +105,7 @@ If your phone and server are on the same LAN, you can use the server's local IP 
 ## How It Works
 
 ```
-┌──────────────────┐       WebSocket (port 7777)       ┌──────────────────────┐
+┌──────────────────┐       WebSocket (port 7777)        ┌──────────────────────┐
 │                  │  ◄──────────────────────────────►  │                      │
 │   Mobile App     │      Tailscale / LAN               │   Daemon (VPS)       │
 │   (Expo / RN)    │                                    │   (Node.js)          │
