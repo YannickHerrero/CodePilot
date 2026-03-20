@@ -3,6 +3,7 @@ import { initDB } from "./db.js";
 import { refreshProjects } from "./project-scanner.js";
 import { startWSServer, setDevDir, stopWSServer } from "./ws-server.js";
 import { cleanupActiveSessions } from "./session-manager.js";
+import { stopAllInstances } from "./service-manager.js";
 import { log } from "./logger.js";
 
 const DEV_DIR = process.env.DEV_DIR || `${process.env.HOME}/dev`;
@@ -21,6 +22,7 @@ const wss = startWSServer(PORT);
 // Graceful shutdown
 async function shutdown(signal: string) {
   log(`Received ${signal}, shutting down...`);
+  stopAllInstances();
   cleanupActiveSessions();
   await stopWSServer(wss);
   log("Shutdown complete.");
