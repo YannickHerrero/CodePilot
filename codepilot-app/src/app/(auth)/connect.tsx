@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 import { useWebSocket, useMessageHandler } from "@/hooks/useWebSocket";
 import { saveCredentials } from "@/lib/storage";
-import { isDemoHost, DEMO_HOST } from "@/lib/demoMode";
+import { isDemoHost } from "@/lib/demoMode";
 
 export default function ConnectScreen() {
   const router = useRouter();
@@ -111,9 +111,6 @@ export default function ConnectScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>
-              Enter {DEMO_HOST} to try demo mode
-            </Text>
           </View>
 
           <View>
