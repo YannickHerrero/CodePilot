@@ -8,9 +8,8 @@
 
 ---
 
-<!-- Replace with a screenshot or GIF of the app in action -->
 <p align="center">
-  <img src="docs/demo.gif" alt="CodePilot demo" width="300" />
+  <img src="demo.jpg" alt="CodePilot demo" width="300" />
   <br />
   <em>Chat with Claude about any project on your server — see file edits, command output, and more in real time.</em>
 </p>
