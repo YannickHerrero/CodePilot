@@ -59,15 +59,22 @@ DEFAULT_MODEL=sonnet
 npx tsx src/index.ts
 ```
 
-### 3. Set up & start the app
+### 3. Get the app
+
+<!-- TODO: uncomment when published
+[<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40">](https://apps.apple.com/app/codepilot/id000000000)
+[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="40">](https://play.google.com/store/apps/details?id=com.yherrero.codepilotapp)
+-->
+
+> **Coming soon to the App Store and Google Play.** In the meantime, you can build and run a [development build](https://docs.expo.dev/develop/development-builds/introduction/) on your device:
 
 ```bash
 cd ../codepilot-app
 bun install    # or npm install
-bunx expo start
+bunx expo run:ios    # or: bunx expo run:android
 ```
 
-Scan the QR code with [Expo Go](https://expo.dev/go) on your phone, enter your daemon's IP, port `7777`, and the token from `.env` — you're in.
+Open the app, enter your daemon's IP, port `7777`, and the token from `.env` — you're in.
 
 ## Configuration
 
