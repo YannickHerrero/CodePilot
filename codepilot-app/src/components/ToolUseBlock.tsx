@@ -72,14 +72,14 @@ export function ToolUseBlock({ block, result }: Props) {
         <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
           {/* Tool input */}
           {block.tool === "Bash" && typeof block.input.command === "string" ? (
-            <View style={{ backgroundColor: "#0D0D14", padding: 10 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 4 }}>
+            <View style={{ backgroundColor: colors.codeBackground, padding: 10 }}>
+              <Text style={{ color: colors.codeText, fontSize: 11, marginBottom: 4, opacity: 0.6 }}>
                 COMMAND
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <Text
                   style={{
-                    color: colors.textPrimary,
+                    color: colors.codeText,
                     fontSize: 13,
                     fontFamily: "monospace",
                   }}
@@ -92,13 +92,13 @@ export function ToolUseBlock({ block, result }: Props) {
 
           {(block.tool === "Read" || block.tool === "Write" || block.tool === "Edit") &&
           typeof block.input.file_path === "string" ? (
-            <View style={{ backgroundColor: "#0D0D14", padding: 10 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 4 }}>
+            <View style={{ backgroundColor: colors.codeBackground, padding: 10 }}>
+              <Text style={{ color: colors.codeText, fontSize: 11, marginBottom: 4, opacity: 0.6 }}>
                 FILE
               </Text>
               <Text
                 style={{
-                  color: colors.textPrimary,
+                  color: colors.codeText,
                   fontSize: 13,
                   fontFamily: "monospace",
                 }}
@@ -120,7 +120,7 @@ export function ToolUseBlock({ block, result }: Props) {
           {result && (
             <View
               style={{
-                backgroundColor: "#0D0D14",
+                backgroundColor: colors.codeBackground,
                 padding: 10,
                 borderTopWidth: 1,
                 borderTopColor: colors.border,
@@ -128,9 +128,10 @@ export function ToolUseBlock({ block, result }: Props) {
             >
               <Text
                 style={{
-                  color: result.isError ? colors.error : colors.textMuted,
+                  color: result.isError ? colors.error : colors.codeText,
                   fontSize: 11,
                   marginBottom: 4,
+                  opacity: result.isError ? 1 : 0.6,
                 }}
               >
                 {result.isError ? "ERROR" : "OUTPUT"}
@@ -142,7 +143,7 @@ export function ToolUseBlock({ block, result }: Props) {
               >
                 <Text
                   style={{
-                    color: result.isError ? colors.error : colors.textSecondary,
+                    color: result.isError ? colors.error : colors.codeText,
                     fontSize: 12,
                     fontFamily: "monospace",
                     lineHeight: 18,
@@ -162,19 +163,19 @@ export function ToolUseBlock({ block, result }: Props) {
 
 function DiffView({ oldStr, newStr }: { oldStr: string; newStr: string }) {
   return (
-    <View style={{ backgroundColor: "#0D0D14", padding: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-      <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 4 }}>DIFF</Text>
+    <View style={{ backgroundColor: colors.codeBackground, padding: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+      <Text style={{ color: colors.codeText, fontSize: 11, marginBottom: 4, opacity: 0.6 }}>DIFF</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
           {oldStr.split("\n").map((line, i) => (
             <Text
               key={`old-${i}`}
               style={{
-                color: "#F87171",
+                color: colors.error,
                 fontSize: 12,
                 fontFamily: "monospace",
                 lineHeight: 18,
-                backgroundColor: "#F8717110",
+                backgroundColor: colors.error + "10",
               }}
             >
               - {line}
@@ -184,11 +185,11 @@ function DiffView({ oldStr, newStr }: { oldStr: string; newStr: string }) {
             <Text
               key={`new-${i}`}
               style={{
-                color: "#4ADE80",
+                color: colors.success,
                 fontSize: 12,
                 fontFamily: "monospace",
                 lineHeight: 18,
-                backgroundColor: "#4ADE8010",
+                backgroundColor: colors.success + "10",
               }}
             >
               + {line}
