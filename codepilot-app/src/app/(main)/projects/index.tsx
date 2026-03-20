@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { View, Text, FlatList, TextInput, RefreshControl } from "react-native";
+import { View, Text, FlatList, TextInput, RefreshControl, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
@@ -35,16 +35,31 @@ export default function ProjectsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-        <Text
-          style={{
-            color: colors.textPrimary,
-            fontSize: 24,
-            fontWeight: "bold",
-            marginBottom: 12,
-          }}
-        >
-          Projects
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+          <Text
+            style={{
+              color: colors.textPrimary,
+              fontSize: 24,
+              fontWeight: "bold",
+              flex: 1,
+            }}
+          >
+            Projects
+          </Text>
+          <Pressable
+            onPress={() => router.push("/(main)/settings")}
+            style={({ pressed }) => ({
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: pressed ? colors.surfaceElevated : colors.surface,
+              justifyContent: "center",
+              alignItems: "center",
+            })}
+          >
+            <Text style={{ color: colors.textSecondary, fontSize: 18 }}>⚙</Text>
+          </Pressable>
+        </View>
         <TextInput
           style={{
             backgroundColor: colors.surface,
