@@ -53,16 +53,26 @@ export default function ProjectDetailScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-        <Text
-          style={{
-            color: colors.textPrimary,
-            fontSize: 22,
-            fontWeight: "bold",
-            marginBottom: 2,
-          }}
-        >
-          {project?.name || projectId}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, marginRight: 8 })}
+          >
+            <Text style={{ color: colors.accent, fontSize: 22 }}>‹</Text>
+          </Pressable>
+          <Text
+            style={{
+              color: colors.textPrimary,
+              fontSize: 22,
+              fontWeight: "bold",
+              flex: 1,
+            }}
+            numberOfLines={1}
+          >
+            {project?.name || projectId}
+          </Text>
+        </View>
         {project?.gitBranch && (
           <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 12 }}>
             {project.gitBranch} &middot; {project.path}

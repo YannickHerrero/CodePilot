@@ -40,9 +40,18 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 24 }}>
-        <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: "bold" }}>
-          Settings
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, marginRight: 8 })}
+          >
+            <Text style={{ color: colors.accent, fontSize: 22 }}>‹</Text>
+          </Pressable>
+          <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: "bold" }}>
+            Settings
+          </Text>
+        </View>
 
         {/* Connection Section */}
         <View>

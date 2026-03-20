@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { colors } from "@/constants/theme";
 import { useConnectionStore } from "@/stores/connection";
 import { useChatStore } from "@/stores/chat";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function StatusBar({ sessionId, projectName, gitBranch }: Props) {
+  const router = useRouter();
   const connectionStatus = useConnectionStore((s) => s.status);
   const busySessionId = useChatStore((s) => s.busySessionId);
   const activity = useChatStore((s) => s.activity);
@@ -34,6 +36,13 @@ export function StatusBar({ sessionId, projectName, gitBranch }: Props) {
         borderBottomColor: colors.border,
       }}
     >
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={8}
+        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+      >
+        <Text style={{ color: colors.accent, fontSize: 22 }}>‹</Text>
+      </Pressable>
       <View
         style={{
           width: 8,
