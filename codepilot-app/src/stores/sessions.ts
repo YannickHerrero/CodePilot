@@ -7,6 +7,7 @@ interface SessionsState {
   isLoading: boolean;
   fetchSessions: (projectId: string) => void;
   createSession: (projectId: string, title?: string) => void;
+  renameSession: (sessionId: string, title: string) => void;
 }
 
 export const useSessionsStore = create<SessionsState>((set, get) => ({
@@ -20,6 +21,10 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
 
   createSession: (projectId, title) => {
     sendMessage({ type: "sessions:create", projectId, title });
+  },
+
+  renameSession: (sessionId, title) => {
+    sendMessage({ type: "session:rename", sessionId, title });
   },
 }));
 
@@ -41,6 +46,21 @@ addMessageHandler((msg: DaemonMessage) => {
         sessionsByProject: {
           ...state.sessionsByProject,
           [msg.session.projectId]: [msg.session, ...existing],
+        },
+      };
+    });
+  }
+
+  if (msg.type === "session:renamed") {
+    useSessionsStore.setState((state) => {
+      const projectId = msg.session.projectId;
+      const existing = state.sessionsByProject[projectId] || [];
+      return {
+        sessionsByProject: {
+          ...state.sessionsByProject,
+          [projectId]: existing.map((s) =>
+            s.id === msg.session.id ? msg.session : s,
+          ),
         },
       };
     });

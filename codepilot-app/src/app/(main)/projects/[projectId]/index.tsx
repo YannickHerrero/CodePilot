@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import { View, Text, FlatList, Pressable, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { useProjectsStore } from "@/stores/projects";
 import { SessionItem } from "@/components/SessionItem";
 import { SessionItemSkeleton } from "@/components/LoadingSkeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { RenameSessionDialog } from "@/components/RenameSessionDialog";
 import { useMessageHandler } from "@/hooks/useWebSocket";
 import type { Session } from "@/lib/protocol";
 
@@ -18,7 +19,8 @@ export default function ProjectDetailScreen() {
   const sessionsRaw = useSessionsStore((s) => s.sessionsByProject[projectId!]);
   const sessions = useMemo(() => sessionsRaw ?? [], [sessionsRaw]);
   const isLoading = useSessionsStore((s) => s.isLoading);
-  const { fetchSessions, createSession } = useSessionsStore();
+  const { fetchSessions, createSession, renameSession } = useSessionsStore();
+  const [sessionToRename, setSessionToRename] = useState<Session | null>(null);
 
   useEffect(() => {
     if (projectId) fetchSessions(projectId);
@@ -45,6 +47,7 @@ export default function ProjectDetailScreen() {
       <SessionItem
         session={item}
         onPress={() => router.push(`/(main)/projects/${projectId}/${item.id}`)}
+        onLongPress={() => setSessionToRename(item)}
       />
     ),
     [projectId, router],
@@ -117,6 +120,13 @@ export default function ProjectDetailScreen() {
             />
           )
         }
+      />
+
+      <RenameSessionDialog
+        session={sessionToRename}
+        visible={sessionToRename !== null}
+        onClose={() => setSessionToRename(null)}
+        onRename={renameSession}
       />
     </SafeAreaView>
   );

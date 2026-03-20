@@ -7,12 +7,14 @@ import type { Session } from "@/lib/protocol";
 interface Props {
   session: Session;
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
-export const SessionItem = memo(function SessionItem({ session, onPress }: Props) {
+export const SessionItem = memo(function SessionItem({ session, onPress, onLongPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       style={({ pressed }) => ({
         backgroundColor: pressed ? colors.surfaceElevated : colors.surface,
         borderRadius: 12,

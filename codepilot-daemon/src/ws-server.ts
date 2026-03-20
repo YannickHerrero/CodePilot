@@ -5,6 +5,7 @@ import { refreshProjects, createProject } from "./project-scanner.js";
 import {
   handleSessionsList,
   handleSessionCreate,
+  handleSessionRename,
   handleMessagesHistory,
   handleMessageSend,
   handleMessageInterrupt,
@@ -170,6 +171,10 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
 
     case "sessions:create":
       handleSessionCreate(ws, msg);
+      break;
+
+    case "session:rename":
+      handleSessionRename(ws, msg);
       break;
 
     case "messages:history":

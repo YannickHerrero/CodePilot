@@ -58,6 +58,7 @@ export type ClientMessage =
   | { type: "projects:refresh" }
   | { type: "sessions:list"; projectId: string }
   | { type: "sessions:create"; projectId: string; title?: string }
+  | { type: "session:rename"; sessionId: string; title: string }
   | { type: "messages:history"; sessionId: string; limit?: number; before?: string }
   | { type: "message:send"; sessionId: string; text: string }
   | { type: "message:interrupt"; sessionId: string }
@@ -70,6 +71,7 @@ export type DaemonMessage =
   | { type: "projects:data"; projects: Project[] }
   | { type: "sessions:data"; projectId: string; sessions: Session[] }
   | { type: "session:created"; session: Session }
+  | { type: "session:renamed"; session: Session }
   | { type: "messages:data"; sessionId: string; messages: Message[]; hasMore: boolean }
   | { type: "message:ack"; sessionId: string; messageId: string; seq: number }
   | { type: "stream:text"; sessionId: string; messageId: string; text: string }

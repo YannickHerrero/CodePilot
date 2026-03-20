@@ -196,6 +196,14 @@ export function touchSession(sessionId: string): void {
     .run(new Date().toISOString(), sessionId);
 }
 
+export function renameSession(sessionId: string, title: string): Session | undefined {
+  const now = new Date().toISOString();
+  getDB()
+    .prepare("UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?")
+    .run(title, now, sessionId);
+  return getSession(sessionId);
+}
+
 function rowToSession(row: Record<string, unknown>): Session {
   let lastMessagePreview: string | undefined;
   if (row.last_message_content) {

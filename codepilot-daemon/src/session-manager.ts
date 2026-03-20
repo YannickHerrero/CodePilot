@@ -9,6 +9,7 @@ import {
   createMessage,
   getProject,
   updateSessionSdkId,
+  renameSession,
 } from "./db.js";
 import { sendTo, broadcast } from "./ws-server.js";
 import type { ClientMessage, AssistantBlock } from "./protocol.js";
@@ -49,6 +50,22 @@ export function handleSessionCreate(
 
   const session = createSession(msg.projectId, msg.title);
   sendTo(ws, { type: "session:created", session });
+}
+
+export function handleSessionRename(
+  ws: WebSocket,
+  msg: Extract<ClientMessage, { type: "session:rename" }>,
+): void {
+  const session = renameSession(msg.sessionId, msg.title);
+  if (session) {
+    broadcast({ type: "session:renamed", session });
+  } else {
+    sendTo(ws, {
+      type: "error",
+      code: "SESSION_NOT_FOUND",
+      message: `Session not found: ${msg.sessionId}`,
+    });
+  }
 }
 
 export function handleMessagesHistory(
@@ -293,6 +310,16 @@ async function startAgentSession(
     activeSession.queryInstance = null;
     broadcast({ type: "stream:done", sessionId, messageId: assistantMessageId });
     broadcast({ type: "status:idle", sessionId });
+
+    // Generate title for new sessions (async, non-blocking)
+    const currentSession = getSession(sessionId);
+    if (currentSession && !currentSession.title && blocks.length > 0) {
+      const assistantText = blocks
+        .filter((b): b is { type: "text"; text: string } => b.type === "text")
+        .map((b) => b.text)
+        .join(" ");
+      generateSessionTitle(sessionId, text, assistantText).catch(() => {});
+    }
   }
 }
 
@@ -315,6 +342,50 @@ function getToolActivity(tool: string, input: Record<string, unknown>): string {
       return `Searching the web...`;
     default:
       return `Using ${tool}...`;
+  }
+}
+
+async function generateSessionTitle(
+  sessionId: string,
+  userMessage: string,
+  assistantResponse: string,
+): Promise<void> {
+  const session = getSession(sessionId);
+  if (!session || session.title) {
+    return; // Already has a title or session doesn't exist
+  }
+
+  try {
+    const titlePrompt = `Based on this conversation, generate a very short title (3-6 words, no quotes, no punctuation at the end). Just output the title, nothing else.
+
+User: ${userMessage.slice(0, 500)}
+Assistant: ${assistantResponse.slice(0, 500)}`;
+
+    let generatedTitle = "";
+
+    for await (const message of query({ prompt: titlePrompt, options: { model: "haiku" } })) {
+      if (message.type === "assistant") {
+        const content = (message as Record<string, unknown>).content as Array<Record<string, unknown>> | undefined;
+        if (content) {
+          for (const block of content) {
+            if (block.type === "text") {
+              generatedTitle += block.text as string;
+            }
+          }
+        }
+      }
+    }
+
+    const title = generatedTitle.trim().replace(/^["']|["']$/g, "").slice(0, 100);
+    if (title) {
+      const updatedSession = renameSession(sessionId, title);
+      if (updatedSession) {
+        broadcast({ type: "session:renamed", session: updatedSession });
+      }
+    }
+  } catch (err) {
+    console.error(`[codepilot] Failed to generate session title:`, err);
+    // Silently fail - title generation is not critical
   }
 }
 
