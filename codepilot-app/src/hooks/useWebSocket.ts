@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import { useConnectionStore } from "@/stores/connection";
 import type { ClientMessage, DaemonMessage } from "@/lib/protocol";
+import { isDemoHost, startDemoMode } from "@/lib/demoMode";
 
 type MessageHandler = (msg: DaemonMessage) => void;
 
@@ -13,6 +14,8 @@ let messageQueue: ClientMessage[] = [];
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 let reconnectDelay = INITIAL_RECONNECT_DELAY;
 let intentionalClose = false;
+let demoSendMessage: ((msg: ClientMessage) => void) | null = null;
+let demoCleanup: (() => void) | null = null;
 
 export function addMessageHandler(handler: MessageHandler): () => void {
   messageHandlers.add(handler);
@@ -22,6 +25,10 @@ export function addMessageHandler(handler: MessageHandler): () => void {
 }
 
 export function sendMessage(msg: ClientMessage): void {
+  if (demoSendMessage) {
+    demoSendMessage(msg);
+    return;
+  }
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   } else {
@@ -55,6 +62,22 @@ export function connectWS(host: string, port: number, token: string): void {
     intentionalClose = true;
     ws.close();
     ws = null;
+  }
+
+  // Demo mode: skip WebSocket, route through mock handler
+  if (isDemoHost(host)) {
+    const dispatch = (msg: DaemonMessage) => {
+      for (const handler of messageHandlers) {
+        handler(msg);
+      }
+    };
+    const demo = startDemoMode(dispatch);
+    demoSendMessage = demo.sendMessage;
+    demoCleanup = demo.cleanup;
+    setStatus("connected");
+    // Dispatch auth success so the connect screen navigates
+    dispatch({ type: "auth:result", success: true });
+    return;
   }
 
   intentionalClose = false;
@@ -110,6 +133,11 @@ export function connectWS(host: string, port: number, token: string): void {
 }
 
 export function disconnectWS(): void {
+  if (demoCleanup) {
+    demoCleanup();
+    demoSendMessage = null;
+    demoCleanup = null;
+  }
   intentionalClose = true;
   if (reconnectTimeout) {
     clearTimeout(reconnectTimeout);

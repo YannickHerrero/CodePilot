@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 import { useWebSocket, useMessageHandler } from "@/hooks/useWebSocket";
 import { saveCredentials } from "@/lib/storage";
+import { isDemoHost, DEMO_HOST } from "@/lib/demoMode";
 
 export default function ConnectScreen() {
   const router = useRouter();
@@ -38,13 +39,15 @@ export default function ConnectScreen() {
     ),
   );
 
+  const isDemo = isDemoHost(host);
+
   const handleConnect = () => {
-    if (!host.trim() || !token.trim()) {
-      setError("Host and token are required");
+    if (!host.trim() || (!isDemo && !token.trim())) {
+      setError(isDemo ? "Host is required" : "Host and token are required");
       return;
     }
     setError(null);
-    connect(host.trim(), parseInt(port, 10) || 7777, token.trim());
+    connect(host.trim(), parseInt(port, 10) || 7777, isDemo ? "demo" : token.trim());
   };
 
   const isConnecting = status === "connecting";
@@ -108,6 +111,9 @@ export default function ConnectScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>
+              Enter {DEMO_HOST} to try demo mode
+            </Text>
           </View>
 
           <View>
