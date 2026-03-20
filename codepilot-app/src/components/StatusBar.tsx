@@ -41,16 +41,8 @@ export function StatusBar({ sessionId, projectName, gitBranch }: Props) {
         hitSlop={8}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
       >
-        <Text style={{ color: colors.accent, fontSize: 22 }}>‹</Text>
+        <Text style={{ color: colors.accent, fontSize: 22, lineHeight: 22, marginTop: -2 }}>‹</Text>
       </Pressable>
-      <View
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: dotColor,
-        }}
-      />
       <View style={{ flex: 1 }}>
         {isBusy && activity ? (
           <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "500" }} numberOfLines={1}>
@@ -64,10 +56,18 @@ export function StatusBar({ sessionId, projectName, gitBranch }: Props) {
         )}
       </View>
       {connectionStatus !== "connected" && (
-        <Text style={{ color: colors.warning, fontSize: 11 }}>
+        <Text style={{ color: colors.warning, fontSize: 11, marginRight: 8 }}>
           {connectionStatus === "connecting" ? "Connecting..." : "Reconnecting..."}
         </Text>
       )}
+      <View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: dotColor,
+        }}
+      />
     </View>
   );
 }
