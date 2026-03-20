@@ -1,315 +1,140 @@
 # CodePilot
 
-Control Claude Code from your phone. CodePilot is a self-hosted system that lets you interact with your development projects through Claude's AI agent — browse projects, start coding sessions, and get real-time streaming responses with full tool use visibility, all from a mobile app connected to your own server.
+**Control Claude Code from your phone.**
 
-## How It Works
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform: iOS & Android](https://img.shields.io/badge/Platform-iOS%20%26%20Android-green.svg)](https://expo.dev)
+[![Expo SDK 55](https://img.shields.io/badge/Expo%20SDK-55-4630EB.svg)](https://expo.dev)
 
-CodePilot has two parts:
+---
 
-```
-┌──────────────────┐         WebSocket (port 7777)         ┌──────────────────────┐
-│                  │  ◄──────────────────────────────────► │                      │
-│   Mobile App     │        Tailscale / LAN                │   Daemon (VPS)       │
-│   (Expo / RN)    │                                       │   (Node.js)          │
-│                  │   auth, projects, sessions, chat,     │                      │
-│                  │   streaming, tool use, interrupts     │   ┌────────────────┐ │
-│  ┌────────────┐  │                                       │   │ Claude Agent   │ │
-│  │ Zustand    │  │                                       │   │ SDK            │ │
-│  │ Stores     │  │                                       │   └────────────────┘ │
-│  └────────────┘  │                                       │   ┌────────────────┐ │
-│  ┌────────────┐  │                                       │   │ SQLite DB      │ │
-│  │ WebSocket  │  │                                       │   │ (sessions,     │ │
-│  │ Hook       │  │                                       │   │  messages)     │ │
-│  └────────────┘  │                                       │   └────────────────┘ │
-└──────────────────┘                                       └──────────────────────┘
-```
+<!-- Replace with a screenshot or GIF of the app in action -->
+<p align="center">
+  <img src="docs/demo.gif" alt="CodePilot demo" width="300" />
+  <br />
+  <em>Chat with Claude about any project on your server — see file edits, command output, and more in real time.</em>
+</p>
 
-**Daemon** (`codepilot-daemon/`) — A Node.js server that runs on your VPS or dev machine. It scans your `~/dev/` directory for projects, manages chat sessions backed by SQLite, and proxies conversations to Claude via the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript). Claude can read files, write code, run commands, and search your codebase — all streamed back to the app in real time.
+---
 
-**App** (`codepilot-app/`) — An Expo/React Native mobile app. Connect it to your daemon over your local network or Tailscale, browse your projects, and chat with Claude about any of them. You see everything Claude does: file reads, edits, command execution, search results — presented as collapsible tool use blocks with diffs and output.
+## What is CodePilot?
 
-### Key Features
+CodePilot is a self-hosted mobile app that connects to your development server and lets you chat with Claude about any of your projects. You browse your repos, start a conversation, and Claude can read files, write code, run commands, and search your codebase — all streamed to your phone in real time with full visibility into what it's doing. Think of it as Claude Code in your pocket.
 
-- **Project discovery** — Daemon auto-detects projects by scanning for `.git/`, `package.json`, `Cargo.toml`, etc. Shows git branch, framework, and description.
-- **Multi-session chat** — Each project can have multiple conversation sessions. Sessions persist across daemon restarts via the Claude SDK's session resume.
-- **Real-time streaming** — Text streams token-by-token with a blinking cursor. Tool use blocks appear as they happen.
-- **Tool use visibility** — See exactly what Claude is doing: file reads, edits (with inline diffs), bash commands, grep searches. All collapsible.
-- **Interrupt support** — Stop Claude mid-generation with a tap.
-- **Auto-reconnect** — App reconnects automatically with exponential backoff if the connection drops, then syncs missed messages.
-- **Quick actions** — One-tap shortcuts for common prompts like "Git status", "Run tests", "Explain project".
-- **Offline resilience** — Messages queue when disconnected and flush on reconnect.
+## Features
 
-## Prerequisites
+- **Project Discovery** — Automatically detects projects on your server by scanning for `.git/`, `package.json`, `Cargo.toml`, etc.
+- **Real-Time Streaming** — Text streams token-by-token. Tool use blocks appear as they happen.
+- **Full Tool Visibility** — See exactly what Claude does: file reads, edits (with inline diffs), bash commands, grep searches. All collapsible.
+- **Multi-Session Chat** — Multiple conversations per project, persisted across restarts.
+- **Interrupt Support** — Stop Claude mid-generation with a tap.
+- **Quick Actions** — One-tap shortcuts for common prompts like "Git status", "Run tests", "Explain project".
+- **Auto-Reconnect** — Reconnects with exponential backoff if the connection drops, then syncs missed messages.
+- **Offline Resilience** — Messages queue when disconnected and flush on reconnect.
 
-- **Server/VPS** — Any Linux machine where you develop (or a VPS). Must have Node.js 20+ installed.
-- **Claude Code CLI** — The daemon uses the Claude Agent SDK which requires the Claude Code CLI. Install with `npm install -g @anthropic-ai/claude-code`.
-- **Claude authentication** — Either a **Claude Max/Pro subscription** (log in with `claude login` on your server) or an **Anthropic API key**. Claude Max works out of the box — no API key needed.
-- **Phone** — iOS or Android with [Expo Go](https://expo.dev/go) for development, or build a standalone app.
-- **Network access** — Your phone needs to reach the daemon. [Tailscale](https://tailscale.com) is recommended for secure access from anywhere without exposing ports.
-- **Bun** (optional) — The app uses Bun as its package manager. Install from [bun.sh](https://bun.sh). npm works too.
+## Quick Start
 
-## Installation
-
-### 1. Clone the repo
+### 1. Clone & set up the daemon
 
 ```bash
-git clone https://github.com/your-username/codepilot.git
-cd codepilot
-```
-
-### 2. Set up the daemon
-
-```bash
-cd codepilot-daemon
+git clone https://github.com/YannickHerrero/CodePilot.git
+cd CodePilot/codepilot-daemon
 npm install
 ```
 
-Create a `.env` file from the example:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your values:
+Create a `.env` file:
 
 ```env
-CODEPILOT_TOKEN=your-secure-random-token    # Shared secret for app auth
-CODEPILOT_PORT=7777                          # WebSocket port
-DEV_DIR=/home/your-username/dev              # Directory to scan for projects
-DEFAULT_MODEL=sonnet                         # Claude model (sonnet, opus, haiku)
-
-# Only needed if NOT using Claude Max/Pro subscription.
-# If you're logged in via `claude login`, leave this unset.
-ANTHROPIC_API_KEY=sk-ant-...
+CODEPILOT_TOKEN=<run: openssl rand -hex 32>
+CODEPILOT_PORT=7777
+DEV_DIR=/home/your-username/dev
+DEFAULT_MODEL=sonnet
 ```
 
-Generate a secure token:
+> **Auth:** The daemon uses the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript), which requires the Claude Code CLI (`npm install -g @anthropic-ai/claude-code`). Log in with `claude login` if you have a Claude Max/Pro subscription, or set `ANTHROPIC_API_KEY` in `.env` to use an API key instead.
+
+### 2. Start the daemon
 
 ```bash
-openssl rand -hex 32
+npx tsx src/index.ts
 ```
 
-### 3. Set up the mobile app
+### 3. Set up & start the app
 
 ```bash
 cd ../codepilot-app
-bun install    # or: npm install
+bun install    # or npm install
+bunx expo start
 ```
 
-### 4. (Optional) Set up as a systemd service
+Scan the QR code with [Expo Go](https://expo.dev/go) on your phone, enter your daemon's IP, port `7777`, and the token from `.env` — you're in.
 
-For 24/7 availability, install the daemon as a service:
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CODEPILOT_TOKEN` | *(required)* | Shared secret for WebSocket auth |
+| `CODEPILOT_PORT` | `7777` | WebSocket listen port |
+| `DEV_DIR` | `~/dev` | Directory to scan for projects |
+| `DEFAULT_MODEL` | `sonnet` | Claude model: `sonnet`, `opus`, or `haiku` |
+| `ANTHROPIC_API_KEY` | *(optional)* | Only needed if not using Claude Max/Pro (`claude login`) |
+
+### Running as a systemd service
+
+For 24/7 availability:
 
 ```bash
 # Edit the service file to match your paths and username
 vim codepilot-daemon/codepilot.service
 
-# Install and start
 sudo cp codepilot-daemon/codepilot.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable codepilot
-sudo systemctl start codepilot
+sudo systemctl enable --now codepilot
 ```
 
-## Usage
+## Network Setup
 
-### Start the daemon
+The simplest way to connect your phone to the daemon is [Tailscale](https://tailscale.com):
 
-```bash
-cd codepilot-daemon
-npx tsx src/index.ts
-```
+1. Install Tailscale on your server and phone.
+2. Use your server's Tailscale IP (e.g., `100.x.x.x`) as the host in the app.
+3. No port forwarding or firewall rules needed.
 
-You should see:
+If your phone and server are on the same LAN, you can use the server's local IP directly.
 
-```
-[2026-03-20T12:00:00.000Z] Starting daemon...
-[2026-03-20T12:00:00.001Z] Database initialized.
-[2026-03-20T12:00:00.050Z] Scanned 12 projects from /home/user/dev
-[2026-03-20T12:00:00.051Z] WebSocket server listening on port 7777
-```
-
-### Start the app
-
-```bash
-cd codepilot-app
-bunx expo start    # or: npx expo start
-```
-
-Scan the QR code with Expo Go on your phone (or press `i`/`a` for simulators).
-
-### Connect
-
-1. Open the app — you'll see the connection screen.
-2. Enter your daemon's IP address (or Tailscale hostname), port (`7777`), and the token from your `.env`.
-3. Tap **Connect**. Credentials are saved for next time.
-
-### Use it
-
-- **Browse projects** — Your `~/dev/` projects appear automatically. Pull to refresh.
-- **Start a session** — Tap a project, then tap **New Session**.
-- **Chat** — Type a message or tap a quick action. Claude will read your code, make edits, run commands — you see everything in real time.
-- **Interrupt** — Tap the stop button (red square) to interrupt Claude mid-response.
-- **Settings** — Tap the gear icon on the projects screen to edit connection settings or disconnect.
-
-## Project Structure
+## How It Works
 
 ```
-codepilot/
-├── codepilot-daemon/           # Node.js WebSocket server
-│   ├── src/
-│   │   ├── index.ts            # Entry point
-│   │   ├── protocol.ts         # Shared message types
-│   │   ├── db.ts               # SQLite schema & queries
-│   │   ├── ws-server.ts        # WebSocket server, auth, routing
-│   │   ├── session-manager.ts  # Claude Agent SDK integration
-│   │   ├── project-scanner.ts  # ~/dev/ project discovery
-│   │   ├── auth.ts             # Token validation
-│   │   └── logger.ts           # Timestamped logging
-│   ├── codepilot.service       # systemd unit file
-│   ├── .env.example
-│   └── package.json
-│
-├── codepilot-app/              # Expo/React Native mobile app
-│   ├── src/
-│   │   ├── app/                # Expo Router screens
-│   │   │   ├── (auth)/connect.tsx
-│   │   │   ├── (main)/projects/index.tsx
-│   │   │   ├── (main)/projects/[projectId]/index.tsx
-│   │   │   ├── (main)/projects/[projectId]/[sessionId].tsx
-│   │   │   └── (main)/settings.tsx
-│   │   ├── components/         # UI components
-│   │   │   ├── ChatInput.tsx
-│   │   │   ├── MessageBubble.tsx
-│   │   │   ├── StreamingBubble.tsx
-│   │   │   ├── ToolUseBlock.tsx
-│   │   │   ├── ProjectCard.tsx
-│   │   │   ├── SessionItem.tsx
-│   │   │   ├── StatusBar.tsx
-│   │   │   ├── QuickActions.tsx
-│   │   │   ├── ReconnectBanner.tsx
-│   │   │   ├── LoadingSkeleton.tsx
-│   │   │   ├── EmptyState.tsx
-│   │   │   └── ErrorBoundary.tsx
-│   │   ├── stores/             # Zustand state management
-│   │   │   ├── connection.ts
-│   │   │   ├── projects.ts
-│   │   │   ├── sessions.ts
-│   │   │   └── chat.ts
-│   │   ├── hooks/
-│   │   │   └── useWebSocket.ts # WebSocket singleton + auto-reconnect
-│   │   ├── lib/
-│   │   │   ├── protocol.ts     # Shared types (mirrors daemon)
-│   │   │   ├── storage.ts      # AsyncStorage credentials
-│   │   │   └── time.ts         # Relative time helper
-│   │   └── constants/
-│   │       └── theme.ts        # Color palette
-│   └── package.json
-│
-└── README.md
+┌──────────────────┐       WebSocket (port 7777)       ┌──────────────────────┐
+│                  │  ◄──────────────────────────────►  │                      │
+│   Mobile App     │      Tailscale / LAN               │   Daemon (VPS)       │
+│   (Expo / RN)    │                                    │   (Node.js)          │
+│                  │                                    │                      │
+│  ┌────────────┐  │                                    │   ┌────────────────┐ │
+│  │ Zustand    │  │                                    │   │ Claude Agent   │ │
+│  │ Stores     │  │                                    │   │ SDK            │ │
+│  └────────────┘  │                                    │   └────────────────┘ │
+│  ┌────────────┐  │                                    │   ┌────────────────┐ │
+│  │ WebSocket  │  │                                    │   │ SQLite DB      │ │
+│  │ Hook       │  │                                    │   └────────────────┘ │
+│  └────────────┘  │                                    │                      │
+└──────────────────┘                                    └──────────────────────┘
 ```
 
-## WebSocket Protocol
+**Daemon** — A Node.js server that runs on your VPS or dev machine. It scans your projects directory, manages chat sessions in SQLite, and proxies conversations to Claude via the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript). Claude can read files, write code, run commands, and search your codebase — all streamed back to the app in real time.
 
-The app and daemon communicate via JSON messages over WebSocket. Connection flow:
+**App** — An Expo/React Native mobile app. Connect it to your daemon over your local network or Tailscale, browse your projects, and chat with Claude about any of them. You see everything Claude does — file reads, edits, command execution, search results — presented as collapsible tool-use blocks with diffs and output.
 
-1. App opens WebSocket to `ws://<host>:<port>`
-2. App sends `{ type: "auth", token: "..." }`
-3. Daemon responds with `{ type: "auth:result", success: true }`
-4. App is now authenticated and can send any message type
-
-### Client → Daemon
-
-| Message | Description |
-|---------|-------------|
-| `auth` | Authenticate with token |
-| `projects:list` | List all detected projects |
-| `projects:refresh` | Re-scan the dev directory |
-| `sessions:list` | List sessions for a project |
-| `sessions:create` | Create a new chat session |
-| `messages:history` | Load paginated message history |
-| `message:send` | Send a message to Claude |
-| `message:interrupt` | Stop Claude mid-generation |
-
-### Daemon → Client
-
-| Message | Description |
-|---------|-------------|
-| `auth:result` | Auth success/failure |
-| `projects:data` | Project list |
-| `sessions:data` | Session list |
-| `session:created` | New session created |
-| `messages:data` | Message history page |
-| `message:ack` | User message persisted |
-| `stream:text` | Streaming text delta |
-| `stream:tool_use` | Claude is using a tool |
-| `stream:tool_result` | Tool execution result |
-| `stream:done` | Response complete |
-| `status:busy` | Claude is working |
-| `status:idle` | Claude is done |
-| `error` | Error occurred |
-
-## Claude's Capabilities
-
-When chatting through CodePilot, Claude has access to these tools on your server:
-
-- **Read** — Read any file in the project
-- **Write** — Create new files
-- **Edit** / **MultiEdit** — Make precise edits to existing files
-- **Bash** — Run shell commands
-- **Glob** — Find files by pattern
-- **Grep** — Search file contents
-- **WebSearch** — Search the web
-
-The daemon runs with `permissionMode: "acceptEdits"`, meaning Claude can read and edit files without prompting. It cannot run destructive bash commands without the permission mode being changed.
-
-## Configuration
-
-### Environment Variables (Daemon)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CODEPILOT_TOKEN` | (required) | Shared secret for WebSocket auth |
-| `CODEPILOT_PORT` | `7777` | WebSocket listen port |
-| `DEV_DIR` | `~/dev` | Directory to scan for projects |
-| `DEFAULT_MODEL` | `sonnet` | Claude model (`sonnet`, `opus`, `haiku`) |
-| `ANTHROPIC_API_KEY` | (optional) | Anthropic API key. Not needed if using Claude Max/Pro — just run `claude login` on your server instead. |
-
-### Network Setup
-
-The simplest setup is [Tailscale](https://tailscale.com):
-
-1. Install Tailscale on your server and phone
-2. Use your server's Tailscale IP (e.g., `100.x.x.x`) as the host in the app
-3. No port forwarding or firewall rules needed
-
-Alternatively, if your phone and server are on the same LAN, use the server's local IP.
-
-## Tech Stack
-
-**Daemon:**
-- TypeScript, Node.js
-- [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript) for AI integration
-- `ws` for WebSocket server
-- `better-sqlite3` for persistence
-- `dotenv` for configuration
-
-**App:**
-- TypeScript, React Native
-- [Expo SDK 55](https://expo.dev) with Expo Router
-- [NativeWind v5](https://www.nativewind.dev) (Tailwind CSS for RN)
-- [Zustand](https://zustand.docs.pmnd.rs) for state management
-- Custom WebSocket hook with auto-reconnect
+Built with TypeScript, [Expo SDK 55](https://expo.dev), [Zustand](https://zustand.docs.pmnd.rs), and the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript).
 
 ## Contributing
 
-Contributions are welcome! Some areas that could use work:
+Contributions are welcome! Some areas that could use help:
 
 - **Tests** — No test suite yet. Unit tests for the daemon and component tests for the app would be valuable.
 - **Push notifications** — Get notified when Claude finishes a long task.
-- **Multi-device** — The daemon broadcasts to all connected clients, but the app doesn't yet handle concurrent sessions gracefully.
-- **Markdown rendering** — Assistant text is plain text right now. Proper markdown with syntax-highlighted code blocks would be a big improvement.
-- **Theme** — Only dark mode. Light mode support is stubbed but not implemented.
+- **Multi-device** — The daemon broadcasts to all connected clients, but the app doesn't handle concurrent sessions gracefully yet.
+- **Markdown rendering** — Improving the markdown and syntax-highlighted code block rendering.
 - **File attachments** — Send images or files to Claude from the app.
 
 ## License
