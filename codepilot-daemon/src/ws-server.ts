@@ -2,6 +2,13 @@ import { WebSocketServer, WebSocket } from "ws";
 import { validateToken } from "./auth.js";
 import { getAllProjects } from "./db.js";
 import { refreshProjects } from "./project-scanner.js";
+import {
+  handleSessionsList,
+  handleSessionCreate,
+  handleMessagesHistory,
+  handleMessageSend,
+  handleMessageInterrupt,
+} from "./session-manager.js";
 import type { ClientMessage, DaemonMessage } from "./protocol.js";
 
 interface ClientState {
@@ -108,11 +115,31 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       });
       break;
 
+    case "sessions:list":
+      handleSessionsList(ws, msg);
+      break;
+
+    case "sessions:create":
+      handleSessionCreate(ws, msg);
+      break;
+
+    case "messages:history":
+      handleMessagesHistory(ws, msg);
+      break;
+
+    case "message:send":
+      handleMessageSend(ws, msg);
+      break;
+
+    case "message:interrupt":
+      handleMessageInterrupt(ws, msg);
+      break;
+
     default:
       sendTo(ws, {
         type: "error",
         code: "UNKNOWN_MESSAGE",
-        message: `Unknown message type: ${msg.type}`,
+        message: `Unknown message type: ${(msg as { type: string }).type}`,
       });
   }
 }
