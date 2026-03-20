@@ -36,6 +36,28 @@ export interface Message {
   seq: number;
 }
 
+export interface Service {
+  id: string;
+  projectId: string;
+  name: string;
+  command: string;
+  createdAt: string;
+}
+
+export interface ServiceInstance {
+  id: string;
+  serviceId: string;
+  pid: number;
+  status: "running" | "stopping" | "stopped" | "crashed";
+  startedAt: string;
+  exitCode: number | null;
+}
+
+export interface ServiceWithInstances {
+  service: Service;
+  instances: ServiceInstance[];
+}
+
 // === Content Types ===
 
 export interface UserMessageContent {
@@ -62,7 +84,17 @@ export type ClientMessage =
   | { type: "messages:history"; sessionId: string; limit?: number; before?: string }
   | { type: "message:send"; sessionId: string; text: string }
   | { type: "message:interrupt"; sessionId: string }
-  | { type: "projects:create"; name: string };
+  | { type: "projects:create"; name: string }
+  // Service messages
+  | { type: "services:list"; projectId: string }
+  | { type: "service:create"; projectId: string; name: string; command: string }
+  | { type: "service:update"; serviceId: string; name?: string; command?: string }
+  | { type: "service:delete"; serviceId: string }
+  // Instance messages
+  | { type: "instance:start"; serviceId: string }
+  | { type: "instance:stop"; instanceId: string }
+  | { type: "instance:subscribe"; instanceId: string }
+  | { type: "instance:unsubscribe"; instanceId: string };
 
 // === Daemon → Client Messages ===
 
@@ -96,4 +128,14 @@ export type DaemonMessage =
   | { type: "status:busy"; sessionId: string; activity?: string }
   | { type: "status:idle"; sessionId: string }
   | { type: "project:created"; project: Project }
-  | { type: "error"; code: string; message: string; sessionId?: string };
+  | { type: "error"; code: string; message: string; sessionId?: string }
+  // Service messages
+  | { type: "services:data"; projectId: string; services: ServiceWithInstances[] }
+  | { type: "service:created"; service: Service }
+  | { type: "service:updated"; service: Service }
+  | { type: "service:deleted"; serviceId: string }
+  // Instance messages
+  | { type: "instance:started"; instance: ServiceInstance; serviceId: string }
+  | { type: "instance:stopped"; instanceId: string; exitCode: number | null }
+  | { type: "instance:log"; instanceId: string; data: string }
+  | { type: "instance:buffer"; instanceId: string; lines: string[] };
