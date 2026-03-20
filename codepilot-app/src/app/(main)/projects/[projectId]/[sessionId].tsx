@@ -1,7 +1,8 @@
 import { useEffect, useCallback, useRef, useMemo } from "react";
-import { View, Text, FlatList, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { colors } from "@/constants/theme";
 import { useChatStore } from "@/stores/chat";
 import { useSessionsStore } from "@/stores/sessions";
@@ -101,45 +102,46 @@ export default function ChatScreen() {
     return <StreamingBubble streaming={streamingMessage} activity={activity} />;
   }, [streamingMessage, isBusy, activity]);
 
+  const { bottom } = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
-        <StatusBar
-          sessionId={sessionId}
-          projectName={project?.name || session?.title || "New Session"}
-          gitBranch={project?.gitBranch}
-        />
-        <ReconnectBanner />
+      <StatusBar
+        sessionId={sessionId}
+        projectName={project?.name || session?.title || "New Session"}
+        gitBranch={project?.gitBranch}
+      />
+      <ReconnectBanner />
 
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          inverted
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-          ListHeaderComponent={ListHeader}
-          ListEmptyComponent={
-            <View style={{ alignItems: "center", paddingTop: 48 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
-                Start a conversation
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 4 }}>
-                Send a message to begin
-              </Text>
-            </View>
-          }
-        />
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        inverted
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
+          <View style={{ alignItems: "center", paddingTop: 48 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
+              Start a conversation
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 4 }}>
+              Send a message to begin
+            </Text>
+          </View>
+        }
+      />
 
+      <KeyboardStickyView offset={{ closed: 0, opened: bottom }}>
         {messages.length === 0 && !isBusy && (
           <QuickActions onAction={handleSend} disabled={isBusy} />
         )}
         <ChatInput onSend={handleSend} onInterrupt={handleInterrupt} isBusy={isBusy} />
-      </KeyboardAvoidingView>
+      </KeyboardStickyView>
     </SafeAreaView>
   );
 }
