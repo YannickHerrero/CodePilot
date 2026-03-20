@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { validateToken } from "./auth.js";
 import { getAllProjects } from "./db.js";
-import { refreshProjects } from "./project-scanner.js";
+import { refreshProjects, createProject } from "./project-scanner.js";
 import {
   handleSessionsList,
   handleSessionCreate,
@@ -148,6 +148,20 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       refreshProjects(devDir).then(() => {
         sendTo(ws, { type: "projects:data", projects: getAllProjects() });
       });
+      break;
+
+    case "projects:create":
+      createProject(devDir, msg.name)
+        .then((project) => {
+          sendTo(ws, { type: "project:created", project });
+        })
+        .catch((err) => {
+          sendTo(ws, {
+            type: "error",
+            code: "PROJECT_CREATE_FAILED",
+            message: err instanceof Error ? err.message : "Failed to create project",
+          });
+        });
       break;
 
     case "sessions:list":

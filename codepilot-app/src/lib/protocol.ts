@@ -53,7 +53,8 @@ export type ClientMessage =
   | { type: "sessions:create"; projectId: string; title?: string }
   | { type: "messages:history"; sessionId: string; limit?: number; before?: string }
   | { type: "message:send"; sessionId: string; text: string }
-  | { type: "message:interrupt"; sessionId: string };
+  | { type: "message:interrupt"; sessionId: string }
+  | { type: "projects:create"; name: string };
 
 export type DaemonMessage =
   | { type: "auth:result"; success: boolean; error?: string }
@@ -81,4 +82,5 @@ export type DaemonMessage =
   | { type: "stream:done"; sessionId: string; messageId: string }
   | { type: "status:busy"; sessionId: string; activity?: string }
   | { type: "status:idle"; sessionId: string }
+  | { type: "project:created"; project: Project }
   | { type: "error"; code: string; message: string; sessionId?: string };

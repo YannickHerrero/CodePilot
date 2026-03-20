@@ -1,7 +1,11 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat, mkdir } from "node:fs/promises";
 import { join, basename } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { Project } from "./protocol.js";
 import { upsertProject } from "./db.js";
+
+const execFileAsync = promisify(execFile);
 
 const PROJECT_MARKERS = [
   ".git",
@@ -142,6 +146,48 @@ function slugify(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+const VALID_NAME_RE = /^[a-zA-Z0-9_-][a-zA-Z0-9._-]*$/;
+
+export async function createProject(devDir: string, name: string): Promise<Project> {
+  const trimmed = name.trim();
+  if (!trimmed || !VALID_NAME_RE.test(trimmed)) {
+    throw new Error("Invalid project name. Use only letters, numbers, hyphens, underscores, and dots.");
+  }
+  if (trimmed.includes("..") || trimmed.includes("/") || trimmed.includes("\\")) {
+    throw new Error("Invalid project name.");
+  }
+
+  const projectPath = join(devDir, trimmed);
+
+  try {
+    await stat(projectPath);
+    throw new Error(`Directory "${trimmed}" already exists.`);
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      // Good — directory doesn't exist yet
+    } else {
+      throw err;
+    }
+  }
+
+  await mkdir(projectPath, { recursive: true });
+  await execFileAsync("git", ["init"], { cwd: projectPath });
+
+  const gitBranch = await getGitBranch(projectPath);
+
+  const project: Project = {
+    id: slugify(trimmed),
+    name: trimmed,
+    path: projectPath,
+    gitBranch,
+    lastOpenedAt: null,
+    metadata: {},
+  };
+
+  upsertProject(project);
+  return project;
 }
 
 export async function refreshProjects(devDir: string): Promise<Project[]> {

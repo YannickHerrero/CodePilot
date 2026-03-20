@@ -8,6 +8,7 @@ interface ProjectsState {
   setProjects: (projects: Project[]) => void;
   fetchProjects: () => void;
   refreshProjects: () => void;
+  createProject: (name: string) => void;
 }
 
 export const useProjectsStore = create<ProjectsState>((set) => ({
@@ -25,11 +26,19 @@ export const useProjectsStore = create<ProjectsState>((set) => ({
     set({ isLoading: true });
     sendMessage({ type: "projects:refresh" });
   },
+
+  createProject: (name: string) => {
+    sendMessage({ type: "projects:create", name });
+  },
 }));
 
 // Register handler for projects:data messages
 addMessageHandler((msg: DaemonMessage) => {
   if (msg.type === "projects:data") {
     useProjectsStore.getState().setProjects(msg.projects);
+  }
+  if (msg.type === "project:created") {
+    const state = useProjectsStore.getState();
+    state.setProjects([msg.project, ...state.projects]);
   }
 });

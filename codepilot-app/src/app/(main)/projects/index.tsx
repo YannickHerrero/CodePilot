@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { View, Text, FlatList, TextInput, RefreshControl, Pressable } from "react-native";
+import { View, Text, FlatList, TextInput, RefreshControl, Pressable, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
@@ -11,8 +11,10 @@ import type { Project } from "@/lib/protocol";
 
 export default function ProjectsScreen() {
   const router = useRouter();
-  const { projects, isLoading, fetchProjects, refreshProjects } = useProjectsStore();
+  const { projects, isLoading, fetchProjects, refreshProjects, createProject } = useProjectsStore();
   const [search, setSearch] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
 
   useEffect(() => {
     fetchProjects();
@@ -48,19 +50,34 @@ export default function ProjectsScreen() {
           >
             Projects
           </Text>
-          <Pressable
-            onPress={() => router.push("/(main)/settings")}
-            style={({ pressed }) => ({
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: pressed ? colors.surfaceElevated : colors.surface,
-              justifyContent: "center",
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ color: colors.textSecondary, fontSize: 18 }}>⚙</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable
+              onPress={() => setShowCreateModal(true)}
+              style={({ pressed }) => ({
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: pressed ? colors.surfaceElevated : colors.surface,
+                justifyContent: "center",
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: 20 }}>+</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/(main)/settings")}
+              style={({ pressed }) => ({
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: pressed ? colors.surfaceElevated : colors.surface,
+                justifyContent: "center",
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: 18 }}>⚙</Text>
+            </Pressable>
+          </View>
         </View>
         <TextInput
           style={{
@@ -108,6 +125,104 @@ export default function ProjectsScreen() {
           )
         }
       />
+
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => setShowCreateModal(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              padding: 20,
+              width: "85%",
+              maxWidth: 360,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+            onPress={() => {}}
+          >
+            <Text
+              style={{
+                color: colors.textPrimary,
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 16,
+              }}
+            >
+              New Project
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: colors.background,
+                color: colors.textPrimary,
+                borderRadius: 8,
+                padding: 10,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 16,
+              }}
+              value={newProjectName}
+              onChangeText={setNewProjectName}
+              placeholder="project-name"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+              <Pressable
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setNewProjectName("");
+                }}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: pressed ? colors.surfaceElevated : colors.background,
+                })}
+              >
+                <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: "600" }}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (newProjectName.trim()) {
+                    createProject(newProjectName.trim());
+                    setShowCreateModal(false);
+                    setNewProjectName("");
+                  }
+                }}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: pressed ? colors.accentHover : colors.accent,
+                  opacity: newProjectName.trim() ? 1 : 0.5,
+                })}
+              >
+                <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
+                  Create
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
