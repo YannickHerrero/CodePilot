@@ -9,7 +9,11 @@
 ---
 
 <p align="center">
-  <img src="demo.jpg" alt="CodePilot demo" width="300" />
+  <img src="images/demo-1.jpg" alt="Projects list" width="230" />
+  &nbsp;&nbsp;
+  <img src="images/demo-2.jpg" alt="Chat session" width="230" />
+  &nbsp;&nbsp;
+  <img src="images/demo-3.jpg" alt="Tool use visibility" width="230" />
   <br />
   <em>Chat with Claude about any project on your server — see file edits, command output, and more in real time.</em>
 </p>
