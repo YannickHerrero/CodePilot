@@ -1,16 +1,31 @@
 export const colors = {
-  background: "#0A0A0F",
-  surface: "#141420",
-  surfaceElevated: "#1E1E2E",
-  border: "#2A2A3C",
-  textPrimary: "#E8E8F0",
-  textSecondary: "#8888A0",
-  textMuted: "#55556A",
-  accent: "#7C6BF0",
-  accentHover: "#9585FF",
-  success: "#4ADE80",
-  warning: "#FBBF24",
-  error: "#F87171",
-  userBubble: "#7C6BF0",
+  // Backgrounds
+  background: "#F5F5F0",       // Warm off-white (Claude bg)
+  surface: "#FFFFFF",           // White cards
+  surfaceElevated: "#EEEAE4",  // Warm pressed/hover state
+
+  // Borders
+  border: "#E0DDD6",           // Warm light gray border
+
+  // Text
+  textPrimary: "#1a1a18",      // Near-black warm (Claude text)
+  textSecondary: "#6B6B60",    // Warm medium gray
+  textMuted: "#9C9C90",        // Warm light gray
+
+  // Accent — Claude's rust-orange
+  accent: "#C15F3C",           // Primary CTA / brand color
+  accentHover: "#ae5630",      // Pressed/hover state
+
+  // Status
+  success: "#3D8C5C",          // Warm green
+  warning: "#C08B2C",          // Warm amber
+  error: "#C4453A",            // Warm red
+
+  // Chat
+  userBubble: "#C15F3C",       // User message bg (= accent)
   userBubbleText: "#FFFFFF",
+
+  // Code blocks (Claude dark-mode brown for contrast)
+  codeBackground: "#2b2a27",
+  codeText: "#E8E5E0",
 } as const;
