@@ -82,6 +82,28 @@ export function getAllProjects(): Project[] {
   return rows.map(rowToProject);
 }
 
+export function removeStaleProjects(activePaths: Set<string>): number {
+  const allProjects = getAllProjects();
+  const stale = allProjects.filter((p) => !activePaths.has(p.path));
+  if (stale.length === 0) return 0;
+
+  const d = getDB();
+  const deleteMessages = d.prepare("DELETE FROM messages WHERE session_id IN (SELECT id FROM sessions WHERE project_id = ?)");
+  const deleteSessions = d.prepare("DELETE FROM sessions WHERE project_id = ?");
+  const deleteProject = d.prepare("DELETE FROM projects WHERE id = ?");
+
+  const removeAll = d.transaction(() => {
+    for (const p of stale) {
+      deleteMessages.run(p.id);
+      deleteSessions.run(p.id);
+      deleteProject.run(p.id);
+    }
+  });
+  removeAll();
+
+  return stale.length;
+}
+
 export function getProject(id: string): Project | undefined {
   const row = getDB().prepare("SELECT * FROM projects WHERE id = ?").get(id) as
     | Record<string, unknown>

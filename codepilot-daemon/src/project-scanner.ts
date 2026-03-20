@@ -3,7 +3,7 @@ import { join, basename } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { Project } from "./protocol.js";
-import { upsertProject } from "./db.js";
+import { upsertProject, removeStaleProjects } from "./db.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -195,6 +195,13 @@ export async function refreshProjects(devDir: string): Promise<Project[]> {
   for (const project of projects) {
     upsertProject(project);
   }
+
+  const activePaths = new Set(projects.map((p) => p.path));
+  const removed = removeStaleProjects(activePaths);
+  if (removed > 0) {
+    console.log(`[codepilot] Removed ${removed} stale project(s) from database`);
+  }
+
   console.log(`[codepilot] Scanned ${projects.length} projects from ${devDir}`);
   return projects;
 }
