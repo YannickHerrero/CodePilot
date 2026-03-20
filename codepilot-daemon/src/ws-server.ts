@@ -9,14 +9,17 @@ import {
   handleMessageSend,
   handleMessageInterrupt,
 } from "./session-manager.js";
+import { log, error as logError } from "./logger.js";
 import type { ClientMessage, DaemonMessage } from "./protocol.js";
 
 interface ClientState {
   authenticated: boolean;
   authTimeout: ReturnType<typeof setTimeout> | null;
+  alive: boolean;
 }
 
 const clients = new Map<WebSocket, ClientState>();
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
 let devDir = process.env.DEV_DIR || `${process.env.HOME}/dev`;
 
@@ -44,6 +47,7 @@ export function startWSServer(port: number): WebSocketServer {
   wss.on("connection", (ws) => {
     const state: ClientState = {
       authenticated: false,
+      alive: true,
       authTimeout: setTimeout(() => {
         if (!state.authenticated) {
           sendTo(ws, { type: "auth:result", success: false, error: "Auth timeout" });
@@ -52,6 +56,10 @@ export function startWSServer(port: number): WebSocketServer {
       }, 10_000),
     };
     clients.set(ws, state);
+
+    ws.on("pong", () => {
+      state.alive = true;
+    });
 
     ws.on("message", (raw) => {
       let msg: ClientMessage;
@@ -80,12 +88,39 @@ export function startWSServer(port: number): WebSocketServer {
     });
 
     ws.on("error", (err) => {
-      console.error("[codepilot] WebSocket error:", err.message);
+      logError("WebSocket error", err);
     });
   });
 
-  console.log(`[codepilot] WebSocket server listening on port ${port}`);
+  // Heartbeat: ping all clients every 30s, terminate unresponsive ones
+  heartbeatInterval = setInterval(() => {
+    for (const [ws, state] of clients) {
+      if (!state.alive) {
+        ws.terminate();
+        clients.delete(ws);
+        continue;
+      }
+      state.alive = false;
+      ws.ping();
+    }
+  }, 30_000);
+
+  log(`WebSocket server listening on port ${port}`);
   return wss;
+}
+
+export function stopWSServer(wss: WebSocketServer): Promise<void> {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+  for (const [ws] of clients) {
+    ws.close();
+  }
+  clients.clear();
+  return new Promise((resolve, reject) => {
+    wss.close((err) => (err ? reject(err) : resolve()));
+  });
 }
 
 function handleAuth(ws: WebSocket, state: ClientState, token: string): void {
@@ -96,7 +131,7 @@ function handleAuth(ws: WebSocket, state: ClientState, token: string): void {
       state.authTimeout = null;
     }
     sendTo(ws, { type: "auth:result", success: true });
-    console.log("[codepilot] Client authenticated");
+    log("Client authenticated");
   } else {
     sendTo(ws, { type: "auth:result", success: false, error: "Invalid token" });
     ws.close();

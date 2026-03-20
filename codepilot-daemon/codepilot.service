@@ -1,0 +1,16 @@
+[Unit]
+Description=CodePilot Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=ilios
+WorkingDirectory=/home/ilios/dev/clodepilot/codepilot-daemon
+ExecStart=/usr/bin/npx tsx src/index.ts
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+EnvironmentFile=/home/ilios/dev/clodepilot/codepilot-daemon/.env
+
+[Install]
+WantedBy=multi-user.target
