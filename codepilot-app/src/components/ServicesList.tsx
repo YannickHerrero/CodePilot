@@ -1,0 +1,95 @@
+import { useEffect, useCallback, useState } from "react";
+import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
+import { colors } from "@/constants/theme";
+import { useServicesStore, selectServicesForProject } from "@/stores/services";
+import { ServiceCard } from "@/components/ServiceCard";
+import { AddServiceModal } from "@/components/AddServiceModal";
+import { EmptyState } from "@/components/EmptyState";
+import type { ServiceWithInstances } from "@/lib/protocol";
+
+interface ServicesListProps {
+  projectId: string;
+}
+
+export function ServicesList({ projectId }: ServicesListProps) {
+  const services = useServicesStore((s) => selectServicesForProject(s, projectId));
+  const isLoading = useServicesStore((s) => s.isLoading);
+  const fetchServices = useServicesStore((s) => s.fetchServices);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    fetchServices(projectId);
+  }, [projectId, fetchServices]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: ServiceWithInstances }) => (
+      <ServiceCard serviceWithInstances={item} />
+    ),
+    [],
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={services}
+        keyExtractor={(item) => item.service.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={() => fetchServices(projectId)}
+            tintColor={colors.accent}
+          />
+        }
+        ListHeaderComponent={
+          <Pressable
+            onPress={() => setShowAddModal(true)}
+            style={({ pressed }) => [
+              styles.addButton,
+              { backgroundColor: pressed ? colors.accentHover : colors.accent },
+            ]}
+          >
+            <Text style={styles.addButtonText}>+ Add Service</Text>
+          </Pressable>
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <EmptyState
+              title="No services configured"
+              subtitle="Add a service to run dev servers, watchers, etc."
+            />
+          ) : null
+        }
+      />
+
+      <AddServiceModal
+        visible={showAddModal}
+        projectId={projectId}
+        onClose={() => setShowAddModal(false)}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    gap: 12,
+    paddingBottom: 24,
+  },
+  addButton: {
+    borderRadius: 8,
+    padding: 12,
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+});
