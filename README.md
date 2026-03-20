@@ -42,8 +42,8 @@ CodePilot has two parts:
 ## Prerequisites
 
 - **Server/VPS** — Any Linux machine where you develop (or a VPS). Must have Node.js 20+ installed.
-- **Anthropic API key** — Get one at [console.anthropic.com](https://console.anthropic.com).
 - **Claude Code CLI** — The daemon uses the Claude Agent SDK which requires the Claude Code CLI. Install with `npm install -g @anthropic-ai/claude-code`.
+- **Claude authentication** — Either a **Claude Max/Pro subscription** (log in with `claude login` on your server) or an **Anthropic API key**. Claude Max works out of the box — no API key needed.
 - **Phone** — iOS or Android with [Expo Go](https://expo.dev/go) for development, or build a standalone app.
 - **Network access** — Your phone needs to reach the daemon. [Tailscale](https://tailscale.com) is recommended for secure access from anywhere without exposing ports.
 - **Bun** (optional) — The app uses Bun as its package manager. Install from [bun.sh](https://bun.sh). npm works too.
@@ -75,9 +75,12 @@ Edit `.env` with your values:
 ```env
 CODEPILOT_TOKEN=your-secure-random-token    # Shared secret for app auth
 CODEPILOT_PORT=7777                          # WebSocket port
-ANTHROPIC_API_KEY=sk-ant-...                 # Your Anthropic API key
 DEV_DIR=/home/your-username/dev              # Directory to scan for projects
 DEFAULT_MODEL=sonnet                         # Claude model (sonnet, opus, haiku)
+
+# Only needed if NOT using Claude Max/Pro subscription.
+# If you're logged in via `claude login`, leave this unset.
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 Generate a secure token:
@@ -268,9 +271,9 @@ The daemon runs with `permissionMode: "acceptEdits"`, meaning Claude can read an
 |----------|---------|-------------|
 | `CODEPILOT_TOKEN` | (required) | Shared secret for WebSocket auth |
 | `CODEPILOT_PORT` | `7777` | WebSocket listen port |
-| `ANTHROPIC_API_KEY` | (required) | Your Anthropic API key |
 | `DEV_DIR` | `~/dev` | Directory to scan for projects |
 | `DEFAULT_MODEL` | `sonnet` | Claude model (`sonnet`, `opus`, `haiku`) |
+| `ANTHROPIC_API_KEY` | (optional) | Anthropic API key. Not needed if using Claude Max/Pro — just run `claude login` on your server instead. |
 
 ### Network Setup
 
