@@ -5,9 +5,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 import { useChatStore } from "@/stores/chat";
 import { useSessionsStore } from "@/stores/sessions";
+import { useProjectsStore } from "@/stores/projects";
 import { MessageBubble } from "@/components/MessageBubble";
 import { StreamingBubble } from "@/components/StreamingBubble";
 import { ChatInput } from "@/components/ChatInput";
+import { StatusBar } from "@/components/StatusBar";
+import { QuickActions } from "@/components/QuickActions";
 import type { Message } from "@/lib/protocol";
 
 export default function ChatScreen() {
@@ -28,6 +31,7 @@ export default function ChatScreen() {
   const session = useSessionsStore(
     (s) => s.sessionsByProject[projectId!]?.find((sess) => sess.id === sessionId),
   );
+  const project = useProjectsStore((s) => s.projects.find((p) => p.id === projectId));
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -91,21 +95,11 @@ export default function ChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
-        >
-          <Text
-            style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "600" }}
-            numberOfLines={1}
-          >
-            {session?.title || "New Session"}
-          </Text>
-        </View>
+        <StatusBar
+          sessionId={sessionId}
+          projectName={project?.name || session?.title || "New Session"}
+          gitBranch={project?.gitBranch}
+        />
 
         <FlatList
           ref={flatListRef}
@@ -127,6 +121,9 @@ export default function ChatScreen() {
           }
         />
 
+        {messages.length === 0 && !isBusy && (
+          <QuickActions onAction={handleSend} disabled={isBusy} />
+        )}
         <ChatInput onSend={handleSend} onInterrupt={handleInterrupt} isBusy={isBusy} />
       </KeyboardAvoidingView>
     </SafeAreaView>
