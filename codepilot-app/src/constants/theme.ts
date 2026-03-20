@@ -1,5 +1,3 @@
-import "@/global.css";
-
 export const colors = {
   background: "#0A0A0F",
   surface: "#141420",
