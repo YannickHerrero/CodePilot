@@ -3,6 +3,7 @@ import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from "rea
 import { colors } from "@/constants/theme";
 import { useServicesStore, selectServicesForProject } from "@/stores/services";
 import { ServiceCard } from "@/components/ServiceCard";
+import { ServiceCardSkeleton } from "@/components/LoadingSkeleton";
 import { AddServiceModal } from "@/components/AddServiceModal";
 import { EmptyState } from "@/components/EmptyState";
 import type { ServiceWithInstances } from "@/lib/protocol";
@@ -54,12 +55,17 @@ export function ServicesList({ projectId }: ServicesListProps) {
           </Pressable>
         }
         ListEmptyComponent={
-          !isLoading ? (
+          isLoading ? (
+            <View style={{ gap: 12 }}>
+              <ServiceCardSkeleton />
+              <ServiceCardSkeleton />
+            </View>
+          ) : (
             <EmptyState
               title="No services configured"
               subtitle="Add a service to run dev servers, watchers, etc."
             />
-          ) : null
+          )
         }
       />
 

@@ -80,3 +80,28 @@ export function SessionItemSkeleton() {
     </View>
   );
 }
+
+export function ServiceCardSkeleton() {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: colors.border,
+        gap: 8,
+      }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View style={{ gap: 4, flex: 1 }}>
+          <LoadingSkeleton width="50%" height={18} />
+          <LoadingSkeleton width="70%" height={14} />
+        </View>
+        <LoadingSkeleton width={40} height={24} borderRadius={12} />
+      </View>
+      <LoadingSkeleton width="100%" height={44} style={{ marginTop: 4 }} />
+      <LoadingSkeleton width="100%" height={32} style={{ marginTop: 4 }} />
+    </View>
+  );
+}
