@@ -43,13 +43,21 @@ addMessageHandler((msg: DaemonMessage) => {
   // History loaded
   if (msg.type === "messages:data") {
     useChatStore.setState((state) => {
+      // Daemon sends messages in seq ASC (oldest first, after .reverse()).
+      // The inverted FlatList needs newest first (index 0 = bottom of screen).
+      const incoming = [...msg.messages].reverse();
+
       const existing = state.messagesBySession[msg.sessionId] || [];
-      // If loading older messages (before cursor), append to end
-      // If first load, replace
-      const merged =
-        existing.length > 0 && msg.messages.length > 0
-          ? dedupeMessages([...existing, ...msg.messages])
-          : msg.messages;
+      const isPaginating =
+        existing.length > 0 &&
+        incoming.length > 0 &&
+        incoming[0].seq < existing[existing.length - 1].seq;
+
+      // On first load, replace with DB data. On pagination, append older messages.
+      const merged = isPaginating
+        ? dedupeMessages([...existing, ...incoming])
+        : incoming;
+
       return {
         messagesBySession: {
           ...state.messagesBySession,
