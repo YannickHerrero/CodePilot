@@ -6,6 +6,8 @@ import { colors } from "@/constants/theme";
 import { useSessionsStore } from "@/stores/sessions";
 import { useProjectsStore } from "@/stores/projects";
 import { SessionItem } from "@/components/SessionItem";
+import { SessionItemSkeleton } from "@/components/LoadingSkeleton";
+import { EmptyState } from "@/components/EmptyState";
 import { useMessageHandler } from "@/hooks/useWebSocket";
 import type { Session } from "@/lib/protocol";
 
@@ -92,14 +94,17 @@ export default function ProjectDetailScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={{ alignItems: "center", paddingTop: 48 }}>
-            <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
-              {isLoading ? "Loading sessions..." : "No sessions yet"}
-            </Text>
-            <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 4 }}>
-              Tap "New Session" to start chatting
-            </Text>
-          </View>
+          isLoading ? (
+            <View style={{ gap: 10 }}>
+              <SessionItemSkeleton />
+              <SessionItemSkeleton />
+            </View>
+          ) : (
+            <EmptyState
+              title="No sessions yet"
+              subtitle={'Tap "New Session" to start chatting'}
+            />
+          )
         }
       />
     </SafeAreaView>

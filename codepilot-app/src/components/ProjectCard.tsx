@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, Text, Pressable } from "react-native";
 import { colors } from "@/constants/theme";
 import { timeAgo } from "@/lib/time";
@@ -8,7 +9,7 @@ interface Props {
   onPress: () => void;
 }
 
-export function ProjectCard({ project, onPress }: Props) {
+export const ProjectCard = memo(function ProjectCard({ project, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -68,4 +69,4 @@ export function ProjectCard({ project, onPress }: Props) {
       )}
     </Pressable>
   );
-}
+});

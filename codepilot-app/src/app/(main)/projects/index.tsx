@@ -5,6 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 import { useProjectsStore } from "@/stores/projects";
 import { ProjectCard } from "@/components/ProjectCard";
+import { ProjectCardSkeleton } from "@/components/LoadingSkeleton";
+import { EmptyState } from "@/components/EmptyState";
 import type { Project } from "@/lib/protocol";
 
 export default function ProjectsScreen() {
@@ -90,11 +92,20 @@ export default function ProjectsScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={{ alignItems: "center", paddingTop: 48 }}>
-            <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
-              {isLoading ? "Loading projects..." : "No projects found"}
-            </Text>
-          </View>
+          isLoading ? (
+            <View style={{ gap: 12 }}>
+              <ProjectCardSkeleton />
+              <ProjectCardSkeleton />
+              <ProjectCardSkeleton />
+            </View>
+          ) : (
+            <EmptyState
+              title="No projects found"
+              subtitle={search ? "Try a different search term" : "No projects detected on your server"}
+              actionLabel={!search ? "Refresh" : undefined}
+              onAction={!search ? refreshProjects : undefined}
+            />
+          )
         }
       />
     </SafeAreaView>

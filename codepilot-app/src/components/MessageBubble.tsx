@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, Text } from "react-native";
 import { colors } from "@/constants/theme";
 import { ToolUseBlock } from "@/components/ToolUseBlock";
@@ -7,7 +8,7 @@ interface Props {
   message: Message;
 }
 
-export function MessageBubble({ message }: Props) {
+export const MessageBubble = memo(function MessageBubble({ message }: Props) {
   if (message.role === "user") {
     const content = message.content as UserMessageContent;
     return (
@@ -35,7 +36,7 @@ export function MessageBubble({ message }: Props) {
   }
 
   return null;
-}
+});
 
 function renderAssistantBlocks(blocks: AssistantBlock[]): React.ReactNode[] {
   const elements: React.ReactNode[] = [];

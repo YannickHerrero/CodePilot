@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, Text, Pressable } from "react-native";
 import { colors } from "@/constants/theme";
 import { timeAgo } from "@/lib/time";
@@ -8,7 +9,7 @@ interface Props {
   onPress: () => void;
 }
 
-export function SessionItem({ session, onPress }: Props) {
+export const SessionItem = memo(function SessionItem({ session, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -49,4 +50,4 @@ export function SessionItem({ session, onPress }: Props) {
       </View>
     </Pressable>
   );
-}
+});
