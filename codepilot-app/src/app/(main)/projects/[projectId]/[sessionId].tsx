@@ -2,7 +2,8 @@ import { useEffect, useCallback, useRef, useMemo } from "react";
 import { View, Text, FlatList } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { KeyboardStickyView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { colors } from "@/constants/theme";
 import { useChatStore } from "@/stores/chat";
 import { useSessionsStore } from "@/stores/sessions";
@@ -103,9 +104,19 @@ export default function ChatScreen() {
   }, [streamingMessage, isBusy, activity]);
 
   const { bottom } = useSafeAreaInsets();
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+
+  const animatedFlatListStyle = useAnimatedStyle(() => ({
+    marginBottom: -keyboardHeight.value,
+  }));
+
+  const AnimatedFlatList = useMemo(
+    () => Animated.createAnimatedComponent(FlatList<Message>),
+    [],
+  );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["top", "bottom"]}>
       <StatusBar
         sessionId={sessionId}
         projectName={project?.name || session?.title || "New Session"}
@@ -113,7 +124,7 @@ export default function ChatScreen() {
       />
       <ReconnectBanner />
 
-      <FlatList
+      <AnimatedFlatList
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
@@ -121,9 +132,9 @@ export default function ChatScreen() {
         inverted
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
         ListHeaderComponent={ListHeader}
+        style={animatedFlatListStyle}
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingTop: 48 }}>
             <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
