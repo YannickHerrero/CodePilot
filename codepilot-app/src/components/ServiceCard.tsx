@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { colors } from "@/constants/theme";
 import { useServicesStore } from "@/stores/services";
+import { EditServiceModal } from "@/components/EditServiceModal";
 import type { ServiceWithInstances, ServiceInstance } from "@/lib/protocol";
 
 interface ServiceCardProps {
@@ -12,13 +14,21 @@ export function ServiceCard({ serviceWithInstances }: ServiceCardProps) {
   const { service, instances } = serviceWithInstances;
   const router = useRouter();
   const startInstance = useServicesStore((s) => s.startInstance);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const runningCount = instances.filter(
     (i) => i.status === "running" || i.status === "stopping",
   ).length;
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      onLongPress={() => setShowEditModal(true)}
+      delayLongPress={400}
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: pressed ? colors.surfaceElevated : colors.surface },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.name}>{service.name}</Text>
@@ -61,7 +71,14 @@ export function ServiceCard({ serviceWithInstances }: ServiceCardProps) {
       >
         <Text style={styles.startButtonText}>+ Start Instance</Text>
       </Pressable>
-    </View>
+
+      <EditServiceModal
+        visible={showEditModal}
+        service={service}
+        hasRunningInstances={runningCount > 0}
+        onClose={() => setShowEditModal(false)}
+      />
+    </Pressable>
   );
 }
 
@@ -123,7 +140,6 @@ function getStatusLabel(instance: ServiceInstance): string {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
