@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { View, Text, FlatList, KeyboardAvoidingView, Platform } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,7 +21,8 @@ export default function ChatScreen() {
     sessionId: string;
   }>();
 
-  const messages = useChatStore((s) => s.messagesBySession[sessionId!] || []);
+  const messagesRaw = useChatStore((s) => s.messagesBySession[sessionId!]);
+  const messages = useMemo(() => messagesRaw ?? [], [messagesRaw]);
   const streamingMessage = useChatStore((s) =>
     s.streamingMessage?.sessionId === sessionId ? s.streamingMessage : null,
   );

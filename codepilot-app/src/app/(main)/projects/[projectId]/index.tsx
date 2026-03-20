@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { View, Text, FlatList, Pressable, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,7 +15,8 @@ export default function ProjectDetailScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
   const project = useProjectsStore((s) => s.projects.find((p) => p.id === projectId));
-  const sessions = useSessionsStore((s) => s.sessionsByProject[projectId!] || []);
+  const sessionsRaw = useSessionsStore((s) => s.sessionsByProject[projectId!]);
+  const sessions = useMemo(() => sessionsRaw ?? [], [sessionsRaw]);
   const isLoading = useSessionsStore((s) => s.isLoading);
   const { fetchSessions, createSession } = useSessionsStore();
 
