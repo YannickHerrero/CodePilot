@@ -102,7 +102,7 @@ For 24/7 availability, install the daemon as a service:
 
 ```bash
 # Edit the service file to match your paths and username
-nano codepilot-daemon/codepilot.service
+vim codepilot-daemon/codepilot.service
 
 # Install and start
 sudo cp codepilot-daemon/codepilot.service /etc/systemd/system/
