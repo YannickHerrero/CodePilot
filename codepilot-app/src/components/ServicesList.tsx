@@ -1,7 +1,7 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { colors } from "@/constants/theme";
-import { useServicesStore, selectServicesForProject } from "@/stores/services";
+import { useServicesStore } from "@/stores/services";
 import { ServiceCard } from "@/components/ServiceCard";
 import { ServiceCardSkeleton } from "@/components/LoadingSkeleton";
 import { AddServiceModal } from "@/components/AddServiceModal";
@@ -13,14 +13,15 @@ interface ServicesListProps {
 }
 
 export function ServicesList({ projectId }: ServicesListProps) {
-  const services = useServicesStore((s) => selectServicesForProject(s, projectId));
+  const servicesRaw = useServicesStore((s) => s.servicesByProject[projectId]);
+  const services = useMemo(() => servicesRaw ?? [], [servicesRaw]);
   const isLoading = useServicesStore((s) => s.isLoading);
-  const fetchServices = useServicesStore((s) => s.fetchServices);
+  const { fetchServices } = useServicesStore();
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchServices(projectId);
-  }, [projectId, fetchServices]);
+  }, [projectId]);
 
   const renderItem = useCallback(
     ({ item }: { item: ServiceWithInstances }) => (
